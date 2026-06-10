@@ -10,6 +10,12 @@ class ZoneType(str, Enum):
     BLOCKED = 'blocked'
 
 
+class TypeHub(str, Enum):
+    START = 'start_hub'
+    END = 'end_hub'
+    HUB = 'hub'
+
+
 class HubProperties():
     """
     Properties of a hub
@@ -107,7 +113,7 @@ class HubProperties():
         self.__color = color
 
     @property
-    def rgb(self) -> tuple[int, int, int]:
+    def rgb(self) -> tuple[float, float, float]:
         return colors.to_rgb(self.__color)
 
 
@@ -152,23 +158,48 @@ class Hub():
 
 
 class Connection():
-    __origin: Hub
-    __destination: Hub
+    __origin: Hub | None
+    __destination: Hub | None
     __properties: ConnectionProperties
+    __name: str
 
-    def __init__(self, origin: Hub,
-                 destination: Hub,
-                 properties: ConnectionProperties) -> None:
-        self.__origin = origin
-        self.__destination = destination
-        self.__properties = properties
+    def __init__(self, name: str) -> None:
+        self.__name = name
 
     def name_origin(self) -> str:
-        return self.__origin.name
+        if self.__name == "":
+            return ""
+        return self.__name.split("-")[0].strip()
 
     def name_destination(self) -> str:
-        return self.__destination.name
+        if self.__name == "":
+            return ""
+        return self.__name.split("-")[1].strip()
+
+    @property
+    def origin(self) -> Hub:
+        return self.__origin
+
+    @origin.setter
+    def origin(self, origin: Hub) -> None:
+        self.__origin = origin
+
+    @property
+    def destination(self) -> Hub:
+        return self.__destination
+
+    @destination.setter
+    def destination(self, destination: Hub) -> None:
+        self.__destination = destination
 
     @property
     def properties(self) -> ConnectionProperties:
         return self.__properties
+
+    @properties.setter
+    def properties(self, properties: ConnectionProperties) -> None:
+        self.__properties = properties
+        
+    @property
+    def name(self) -> str:
+        return self.__name

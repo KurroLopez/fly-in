@@ -1,5 +1,5 @@
 from .entities import ZoneType, HubProperties, ConnectionProperties
-from .entities import Hub, Connection
+from .entities import Hub, Connection, TypeHub
 
 __all__ = ['ZoneType', 'HubProperties', 'ConnectionProperties',
-           'Hub', 'Connection']
+           'Hub', 'Connection', 'TypeHub']

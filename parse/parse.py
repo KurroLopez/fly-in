@@ -1,7 +1,9 @@
 from enum import Enum
+
+from entities.entities import TypeHub
 from .validator import Validator
 from map import Map
-from entities import Hub
+from entities import Hub, Connection
 
 
 class Configs(str, Enum):
@@ -22,7 +24,7 @@ class Parse():
     parse_error: list[str] = []
     configs_valid: list[str] = []
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__map = Map()
         self.configs_valid = [cfg.value for cfg in Configs]
         self.first_line = True
@@ -115,8 +117,9 @@ class Parse():
         if self.__map.exist_start_hub():
             raise ValueError("Start hub is defined previously")
         start_hub: Hub = Validator().val_hub(raw)
-        if self.__map.exist_hub(start_hub.name):
-            raise ValueError(f"The name of start_hub '{start_hub.name}'"
+        info_hub: tuple[bool, TypeHub] = self.__map.exist_hub(start_hub.name)
+        if info_hub[0]:
+            raise ValueError(f"The name of start_hub '{start_hub.name}' "
                              "is defined previously")
         self.__map.start_hub = start_hub
 
@@ -124,16 +127,58 @@ class Parse():
         if self.__map.exist_end_hub():
             raise ValueError("End hub is defined previously")
         end_hub: Hub = Validator().val_hub(raw)
-        if self.__map.exist_hub(end_hub.name):
-            raise ValueError(f"The name of end_hub '{end_hub.name}'"
+        info_hub: tuple[bool, TypeHub] = self.__map.exist_hub(end_hub.name)
+        if info_hub[0]:
+            raise ValueError(f"The name of end_hub '{end_hub.name}' "
                              "is defined previously")
         self.__map.end_hub = end_hub
 
     def __parse_hub(self, line_number: int, config_value: str) -> None:
         hub: Hub = Validator().val_hub(config_value)
-        if self.__map.exist_hub(hub.name):
+        info_hub: tuple[bool, TypeHub] = self.__map.exist_hub(hub.name)
+        if info_hub[0]:
             raise ValueError(f"Hub '{hub.name}' is defined previously")
         self.__map.add_hub(hub)
 
     def __parse_connection(self, line_number: int, config_value: str) -> None:
-        pass
+        connection: Connection = Validator().val_connection(config_value)
+        if self.__map.exist_connection(connection.name):
+            raise ValueError(f"Connection '{connection.name}' "
+                             f"is defined previously")
+        """ Validate if the origin and destination hubs exist """
+        info_origin: tuple[bool, TypeHub] = ()
+        info_origin = self.__map.exist_hub(connection.name_origin())
+        type_origin: TypeHub = info_origin[1]
+        exists_origin: bool = info_origin[0]
+
+        if not exists_origin:
+            raise ValueError(f"Origin hub '{connection.name_origin()}' "
+                             f"does not exist")
+
+        info_destination: tuple[bool, TypeHub] = ()
+        info_destination = self.__map.exist_hub(connection.name_destination())
+        type_destination: TypeHub = info_destination[1]
+        exists_destination: bool = info_destination[0]
+        if not exists_destination:
+            raise ValueError(f"Destination hub "
+                             f"'{connection.name_destination()}' "
+                             f"does not exist")
+
+        origin_hub: Hub
+        if type_origin == TypeHub.START:
+            origin_hub = self.__map.start_hub
+        elif type_origin == TypeHub.END:
+            origin_hub = self.__map.end_hub
+        else:
+            origin_hub = self.__map.hubs[connection.name_origin()]
+
+        destination_hub: Hub
+        if type_destination == TypeHub.START:
+            destination_hub = self.__map.start_hub
+        elif type_destination == TypeHub.END:
+            destination_hub = self.__map.end_hub
+        else:
+            destination_hub = self.__map.hubs[connection.name_destination()]
+        connection.origin = origin_hub
+        connection.destination = destination_hub
+        self.__map.add_connection(connection)

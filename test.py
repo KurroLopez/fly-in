@@ -1,17 +1,23 @@
 from parse import Parse
+from sys import argv
 
 
-def test_parse():
-    parser_ok: Parse = Parse()
-    assert parser_ok.load_map("maps/test1.txt")
-    for error in parser_ok.list_errors:
-        print(error)
+def main() -> None:
+    len_args = len(argv)
+    if len_args == 1:
+        print("Usage: test.py <file>")
+        return
+    filename: str = argv[1]
 
-    parser_ko: Parse = Parse()
-    assert not parser_ko.load_map("maps/test2.txt")
-    for error in parser_ko.list_errors:
-        print(error)
+    parse: Parse = Parse()
+    parse.load_map(filename)
+    if parse.list_errors:
+        print(f"Errors found in {filename}:")
+        for error in parse.list_errors:
+            print(error)
+    else:
+        print(f"No errors found in {filename}")
 
 
 if __name__ == "__main__":
-    test_parse()
+    main()

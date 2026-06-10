@@ -1,11 +1,11 @@
-from entities import Hub
+from entities import Hub, TypeHub
 from entities import Connection
 
 
 class Map():
     __nb_drones: int
-    __start_hub: Hub
-    __end_hub: Hub
+    __start_hub: Hub | None
+    __end_hub: Hub | None
     __hubs: dict[str, Hub]
     __connections: dict[str, Connection]
 
@@ -54,15 +54,22 @@ class Map():
     def add_connection(self, connection: Connection) -> None:
         self.__connections[connection.name] = connection
 
-    def exist_hub(self, name: str) -> bool:
+    def exist_hub(self, name: str) -> tuple[bool, TypeHub]:
         exists_hub: bool = name in self.__hubs
-        exists_start: bool = (self.__start_hub is not None
-                              and self.__start_hub.name == name)
-        exists_end: bool = (self.__end_hub is not None
-                            and self.__end_hub.name == name)
+        exists_start: bool = False
+        exists_end: bool = False
+        type_hub: TypeHub = TypeHub.HUB
+        if self.__start_hub is not None:
+            exists_start = self.__start_hub.name == name
+            if exists_start:
+                type_hub = TypeHub.START
+        if self.__end_hub is not None:
+            exists_end = self.__end_hub.name == name
+            if exists_end:
+                type_hub = TypeHub.END
         exists: bool = exists_hub or exists_start or exists_end
 
-        return exists
+        return exists, type_hub
 
     def exist_connection(self, name: str) -> bool:
         return name in self.__connections
