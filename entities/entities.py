@@ -45,11 +45,16 @@ class HubProperties():
             priority
             blocked
         max: Max number of drones in this hub. By default 1
+
+        exception:
+        ValueError if max value is negative or 0
         """
         self.__posX = x
         self.__posY = y
         self.__color = color
         self.__type = type
+        if max < 0:
+            raise ValueError("'max' must be a postive value.")
         self.__max_drones = max
 
     @property
@@ -71,7 +76,7 @@ class HubProperties():
         ValueError if max value is negative or 0
         """
         if max < 0:
-            raise ValueError("'nb_drones' must be a postive value.")
+            raise ValueError("'max' must be a postive value.")
         self.__max_drones = max
 
     @property
@@ -146,14 +151,23 @@ class Hub():
 
     @property
     def name(self) -> str:
+        """
+        Return the name of the hub
+        """
         return self.__name
 
     @property
     def properties(self) -> HubProperties:
+        """
+        Return the properties of the hub
+        """
         return self.__properties
 
     @properties.setter
     def properties(self, properties: HubProperties) -> None:
+        """
+        Set the properties of the hub
+        """
         self.__properties = properties
 
 
@@ -164,42 +178,78 @@ class Connection():
     __name: str
 
     def __init__(self, name: str) -> None:
+        """
+        Initialize a connection
+
+        args:
+        name: str. Name of the connection.
+            It should be in the format "origin-destination"
+        """
         self.__name = name
+        self.__origin = None
+        self.__destination = None
 
     def name_origin(self) -> str:
+        """
+        Return the name of the origin hub
+        """
         if self.__name == "":
             return ""
         return self.__name.split("-")[0].strip()
 
     def name_destination(self) -> str:
-        if self.__name == "":
+        """
+        Return the name of the destination hub
+        """
+        parts = self.__name.split("-")
+        if len(parts) < 2:
             return ""
-        return self.__name.split("-")[1].strip()
+        return parts[1].strip()
 
     @property
-    def origin(self) -> Hub:
+    def origin(self) -> Hub | None:
+        """
+        Return the origin hub of the connection
+        """
         return self.__origin
 
     @origin.setter
-    def origin(self, origin: Hub) -> None:
+    def origin(self, origin: Hub | None) -> None:
+        """
+        Set the origin hub of the connection"""
         self.__origin = origin
 
     @property
-    def destination(self) -> Hub:
+    def destination(self) -> Hub | None:
+        """
+        Return the destination hub of the connection
+        """
         return self.__destination
 
     @destination.setter
-    def destination(self, destination: Hub) -> None:
+    def destination(self, destination: Hub | None) -> None:
+        """
+        Set the destination hub of the connection
+        """
         self.__destination = destination
 
     @property
     def properties(self) -> ConnectionProperties:
+        """
+        Return the properties of the connection
+        """
         return self.__properties
 
     @properties.setter
     def properties(self, properties: ConnectionProperties) -> None:
+        """
+        Set the properties of the connection
+        """
         self.__properties = properties
-        
+
     @property
     def name(self) -> str:
+        """
+        Return the name of the connection
+        """
         return self.__name

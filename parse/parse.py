@@ -33,6 +33,10 @@ class Parse():
     def list_errors(self) -> list[str]:
         return self.parse_error
 
+    @property
+    def map(self) -> Map:
+        return self.__map
+
     def load_map(self, file: str) -> bool:
         """
         Load the map and parse the content
@@ -146,7 +150,7 @@ class Parse():
             raise ValueError(f"Connection '{connection.name}' "
                              f"is defined previously")
         """ Validate if the origin and destination hubs exist """
-        info_origin: tuple[bool, TypeHub] = ()
+        info_origin: tuple[bool, TypeHub]
         info_origin = self.__map.exist_hub(connection.name_origin())
         type_origin: TypeHub = info_origin[1]
         exists_origin: bool = info_origin[0]
@@ -155,7 +159,7 @@ class Parse():
             raise ValueError(f"Origin hub '{connection.name_origin()}' "
                              f"does not exist")
 
-        info_destination: tuple[bool, TypeHub] = ()
+        info_destination: tuple[bool, TypeHub]
         info_destination = self.__map.exist_hub(connection.name_destination())
         type_destination: TypeHub = info_destination[1]
         exists_destination: bool = info_destination[0]
@@ -164,7 +168,7 @@ class Parse():
                              f"'{connection.name_destination()}' "
                              f"does not exist")
 
-        origin_hub: Hub
+        origin_hub: Hub | None
         if type_origin == TypeHub.START:
             origin_hub = self.__map.start_hub
         elif type_origin == TypeHub.END:
@@ -172,7 +176,7 @@ class Parse():
         else:
             origin_hub = self.__map.hubs[connection.name_origin()]
 
-        destination_hub: Hub
+        destination_hub: Hub | None
         if type_destination == TypeHub.START:
             destination_hub = self.__map.start_hub
         elif type_destination == TypeHub.END:
