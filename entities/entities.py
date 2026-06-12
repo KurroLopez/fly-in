@@ -30,7 +30,7 @@ class HubProperties():
                  y: int,
                  color: str = 'none',
                  type: ZoneType = ZoneType.NORMAL,
-                 max: int = 1) -> None:
+                 max_drones: int = 1) -> None:
         """
         Initialize a hub properties
 
@@ -53,9 +53,9 @@ class HubProperties():
         self.__posY = y
         self.__color = color
         self.__type = type
-        if max < 0:
-            raise ValueError("'max' must be a postive value.")
-        self.__max_drones = max
+        if max_drones < 0:
+            raise ValueError("'max_drones' must be a postive value.")
+        self.__max_drones = max_drones
 
     @property
     def max_drones(self) -> int:
@@ -87,7 +87,7 @@ class HubProperties():
         return self.__posX
 
     @property
-    def poxY(self) -> int:
+    def posY(self) -> int:
         """
         Y Position of the hub
         """

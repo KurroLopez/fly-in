@@ -1,8 +1,48 @@
+from typing import Any
 from entities import Hub, Connection
-from entities import HubProperties, ConnectionProperties
+from entities import HubProperties, ConnectionProperties, ZoneType
+from matplotlib import colors
 
 
 class Validator():
+
+    @staticmethod
+    def extract_metadata(raw: str) -> tuple[str, str]:
+        """
+        Extract metadata from a raw string
+
+        args:
+            raw: Raw string containing the value and optional metadata
+        return:
+            tuple: A tuple containing the value and metadata
+        """
+        metadata = ""
+        if "[" in raw:
+            raw, metadata = raw.split("[", 1)
+            metadata = metadata.rstrip("]").strip()
+        return raw.strip(), metadata
+
+    @staticmethod
+    def split_metadata(metadata: str) -> dict[str, str]:
+        """
+        Split metadata into a dictionary
+
+        args:
+            metadata: Raw metadata string
+        return:
+            dict: A dictionary containing the metadata key-value pairs
+        """
+        metadata_dict = {}
+        for item in metadata.split(' '):
+            key_value = item.strip().split('=', 1)
+            if len(key_value) == 2:
+                key = key_value[0].strip().lower()
+                value = key_value[1].strip()
+                metadata_dict[key] = value
+            else:
+                raise ValueError(f"Invalid metadata format: '{item.strip()}'")
+        return metadata_dict
+
     @staticmethod
     def val_nb_drones(raw: str) -> int:
         """
@@ -14,28 +54,28 @@ class Validator():
             int: Value of number of drones
         """
         nb_drones: int = 0
+        raw = raw.strip()
         if raw == "":
             raise ValueError("Value cannot be empty")
         try:
             nb_drones = int(raw)
         except ValueError:
-            raise ValueError("'nb_drones' must be a integer."
+            raise ValueError("'nb_drones' must be a integer. "
                              f"Invalid value '{raw}'")
         if nb_drones <= 0:
-            raise ValueError("'nb_drones' must be a postive value."
+            raise ValueError("'nb_drones' must be a postive value. "
                              f"Invalid value '{raw}'")
         return nb_drones
 
     @staticmethod
     def val_hub(raw: str) -> Hub:
+        zone_types = [type.value for type in ZoneType]
         raw = raw.strip()
         if raw == "":
             raise ValueError("Value cannot be empty")
 
         metadata: str = ""
-        if "[" in raw:
-            raw, metadata = raw.split("[", 1)
-            metadata = metadata.rstrip("]").strip()
+        raw, metadata = Validator.extract_metadata(raw)
 
         parts = raw.split()
         if len(parts) < 3:
@@ -48,15 +88,41 @@ class Validator():
         except ValueError:
             raise ValueError(f"Invalid hub coordinates: '{raw.strip()}'")
 
-        color: str = "none"
+        color: str = "whitesmoke"
+        md: int = 1
+        zone_type: ZoneType = ZoneType.NORMAL
         if metadata:
-            for item in metadata.split(','):
-                key_value = item.strip().split('=', 1)
-                if len(key_value) == 2 and key_value[0].strip() == 'color':
-                    color = key_value[1].strip()
+            metadata_dict = Validator.split_metadata(metadata)
+            if len(metadata_dict) > 0:
+                for key in metadata_dict.keys():
+                    value: Any = metadata_dict[key]
+                    match key:
+                        case 'color':
+                            color = value
+                            if color != "rainbow":
+                                if color not in colors.cnames:
+                                    raise ValueError(f"Invalid color value: "
+                                                     f"'{color}'")
+                        case 'max_drones':
+                            try:
+                                md = int(value)
+                            except ValueError:
+                                raise ValueError("Invalid 'max_drones' value:"
+                                                 f"'{value}'")
+                            if md <= 0:
+                                raise ValueError("'max_drones' must be a "
+                                                 "positive integer. "
+                                                 f"Invalid value: '{md}'")
+                        case 'zone':
+                            if value not in zone_types:
+                                raise ValueError("Invalid 'zone' "
+                                                 f"value: '{value}'")
+                            zone_type = value
+                        case _:
+                            raise ValueError(f"Unknown metadata key: '{key}'")
 
         hub: Hub = Hub(name)
-        hub.properties = HubProperties(pos_x, pos_y, color)
+        hub.properties = HubProperties(pos_x, pos_y, color, zone_type, md)
         return hub
 
     @staticmethod
@@ -66,9 +132,7 @@ class Validator():
             raise ValueError("Value cannot be empty")
 
         metadata: str = ""
-        if "[" in raw:
-            raw, metadata = raw.split("[", 1)
-            metadata = metadata.rstrip("]").strip()
+        raw, metadata = Validator.extract_metadata(raw)
 
         parts = raw.split("-")
         if len(parts) != 2:
@@ -84,22 +148,25 @@ class Validator():
             raise ValueError(f"Origin and destination cannot be the same: '"
                              f"{raw.strip()}'")
 
-        max_link_capacity: int = 1
+        mlc: int = 1
         if metadata:
-            for item in metadata.split(','):
-                key_value = item.strip().split('=', 1)
-                if len(key_value) == 2:
-                    if key_value[0].strip() == 'max_link_capacity':
+            metadata_dict = Validator.split_metadata(metadata)
+            for key in metadata_dict.keys():
+                value: Any = metadata_dict[key]
+                match key:
+                    case 'max_link_capacity':
                         try:
-                            max_link_capacity = int(key_value[1].strip())
+                            mlc = int(value)
                         except ValueError:
-                            value: str = key_value[1].strip()
-                            raise ValueError(f"Invalid 'max_link_capacity'"
-                                             f" value: '{value}'")
-        if max_link_capacity <= 0:
-            raise ValueError(f"'max_link_capacity' must be a positive integer."
-                             f" Invalid value: '{max_link_capacity}'")
+                            raise ValueError(f"Invalid 'max_link_capacity' "
+                                             f"value: '{value}'")
+                        if mlc <= 0:
+                            raise ValueError(f"'max_link_capacity' must be a "
+                                             f"positive integer. "
+                                             f"Invalid value: '{mlc}'")
+                    case _:
+                        raise ValueError(f"Unknown metadata key: '{key}'")
 
         connection: Connection = Connection(raw)
-        connection.properties = ConnectionProperties(max_link_capacity)
+        connection.properties = ConnectionProperties(mlc)
         return connection
