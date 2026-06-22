@@ -18,12 +18,12 @@ def main() -> None:
     and displays the map if no errors are found.
 
     Usage:
-    uv run python3 main.py <file>
+    uv run python3 fly-in.py <file>
     make run MAP=<file>
     """
     len_args = len(argv)
     if len_args == 1:
-        print(f"{WARNING}Usage:  uv run python3 main.py <file>\n"
+        print(f"{WARNING}Usage:  uv run python3 fly-in.py <file>\n"
               f"{TAB}make run MAP=<file>{CLEAR}")
         return
     filename: str = argv[1]

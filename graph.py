@@ -16,13 +16,15 @@ class Graph:
     INITIAL_WIDTH = 1408
     INITIAL_HEIGHT = 768
 
-    HUB_SIZE = 60
+    HUB_SIZE = 80
     CONNECTION_WIDTH = 6
+    GRID_SIZE = 150
 
     __map: Map | None = None
     __bg: Surface | None = None
     __process: Process | None = None
     __imgs: dict[str, Surface] = {}
+    __auto: bool = False
 
     def __init__(self, title: str = "Fly-in",
                  width: int = INITIAL_WIDTH,
@@ -36,12 +38,12 @@ class Graph:
         :param height: The height of the window.
         :param map: The map to be displayed.
         """
-        self.__map = map
-        self.__process = Process(map) if map is not None else None
         pygame.init()
         pygame.display.set_caption(title)
         pygame.display.set_mode((width, height), pygame.RESIZABLE)
         assets.load_image(Path("assets"))
+        self.__map = map
+        self.__process = Process(map) if map is not None else None
         self.__imgs = assets.IMG
         icon = self.__imgs.get("icon")
         if icon is not None:
@@ -88,7 +90,7 @@ class Graph:
         if screen is None:
             return
 
-        grid_size: int = 150
+        grid_size: int = self.GRID_SIZE
         start_posX: int = start_hub.properties.posX
         start_posY: int = start_hub.properties.posY
         end_posX: int = end_hub.properties.posX
@@ -128,7 +130,7 @@ class Graph:
                                             (start_point.y + end_point.y) / 2))
         screen.blit(label, label_rect)
 
-    def __display_hub(self, hub: Hub) -> None:
+    def __display_hub(self, hub: Hub) -> Vector2:
         """
         Display a hub on the screen.
 
@@ -136,9 +138,9 @@ class Graph:
         """
         screen: Surface | None = pygame.display.get_surface()
         if screen is None:
-            return
+            return Vector2(0, 0)
 
-        grid_size: int = 150
+        grid_size: int = self.GRID_SIZE
         posX: int = hub.properties.posX
         posY: int = hub.properties.posY
         center_x: int = 90  # screen.get_width() // 10
@@ -154,7 +156,7 @@ class Graph:
 
         font = assets.FONT
         if font is None:
-            return
+            return Vector2(0, 0)
 
         font_color: str = "white"
         background_color: str = "black"
@@ -188,6 +190,7 @@ class Graph:
                 md_rec = md_lbl.get_rect(midtop=(rect.centerx, rect.top - 25))
 
             screen.blit(md_lbl, md_rec)
+        return hub_center
 
     def __display_map(self) -> None:
         """
@@ -198,19 +201,25 @@ class Graph:
 
         self.__draw_background()
         self.__display_menu()
+        start_hub: Hub | None = None
+        end_hub: Hub | None = None
+        position: Vector2 | None = None
 
-        start_hub: Hub | None = self.__map.start_hub
+        start_hub = self.__map.start_hub
         if start_hub is not None:
-            self.__display_hub(start_hub)
-        end_hub: Hub | None = self.__map.end_hub
+            position = self.__display_hub(start_hub)
+            start_hub.position = position
+        end_hub = self.__map.end_hub
         if end_hub is not None:
-            self.__display_hub(end_hub)
+            position = self.__display_hub(end_hub)
+            end_hub.position = position
         for hub in self.__map.hubs.values():
-            self.__display_hub(hub)
+            position = self.__display_hub(hub)
+            hub.position = position
 
         for connection in self.__map.connections.values():
-            start_hub: Hub | None = connection.origin
-            end_hub: Hub | None = connection.destination
+            start_hub = connection.origin
+            end_hub = connection.destination
             if start_hub is None or end_hub is None:
                 continue
             self.__display_connection(start_hub, end_hub,
@@ -237,7 +246,7 @@ class Graph:
 
         # Draw the menu background
         width: int = screen.get_width()
-        mid_x: int = width // 2
+        mid_x: int = (width // 2) - 250
         surface1 = Surface((500, 300))
         surface1.fill(color="white")
         surface_rect = surface1.get_rect(topleft=(mid_x + 20, 20),
@@ -254,23 +263,69 @@ class Graph:
         pygame.draw.line(screen, "white", line_start, line_end, width=4)
 
         # Draw the menu title
-        title = font_big.render("-= Fly-in =-", True, "white", "blue")
+        title: Surface = font_big.render("-= Fly-in =-", True, "white", "blue")
         title_rect = title.get_rect(center=(mid_x + 250, 35))
         screen.blit(title, title_rect)
 
-        opt1 = font.render("ESC: Exit", True, "white", "blue")
+        opt1: Surface = font.render("ESC: Exit", True, "white", "blue")
         opt1_rect = opt1.get_rect(topleft=(mid_x + 20, 100))
         screen.blit(opt1, opt1_rect)
 
-        opt2 = font.render("SPACE: Next step", True, "white", "blue")
-        opt2_rect = opt2.get_rect(topleft=(mid_x + 20, 150))
-        screen.blit(opt2, opt2_rect)
-
-        opt3 = font.render("R: Restart", True, "white", "blue")
-        opt3_rect = opt3.get_rect(topleft=(mid_x + 20, 200))
-        screen.blit(opt3, opt3_rect)
-
+        self.__display_auto_option()
+        self.__display_next_step_option()
         self.__update_display_turn()
+
+    def __display_auto_option(self) -> None:
+        """
+        Display the "Auto" option on the screen.
+        """
+        screen: Surface | None = pygame.display.get_surface()
+        if screen is None:
+            return
+
+        width: int = screen.get_width()
+        mid_x: int = (width // 2) - 250
+
+        font = assets.FONT
+        if font is None:
+            return
+
+        forecolor: str = "white"
+        if self.__auto:
+            forecolor = "green"  # Green for auto mode enabled
+        text: str = "A: Auto ON " if self.__auto else "A: Auto OFF"
+        opt1: Surface = font.render(text, True, forecolor, "blue")
+        opt1_rect = opt1.get_rect(topleft=(mid_x + 20, 150))
+        screen.blit(opt1, opt1_rect)
+
+    def __display_next_step_option(self) -> None:
+        """
+        Display the "Next Step" option on the screen.
+
+        :param mid_x: The x-coordinate of the middle of the screen.
+        """
+        screen: Surface | None = pygame.display.get_surface()
+        if screen is None:
+            return
+
+        width: int = screen.get_width()
+        mid_x: int = (width // 2) - 250
+
+        screen: Surface | None = pygame.display.get_surface()
+        if screen is None:
+            return
+
+        font = assets.FONT
+        if font is None:
+            return
+
+        forecolor: str = "white"
+        if self.__auto:
+            forecolor = "dimgray"  # Gray if auto mode is enabled
+        opt2: Surface = font.render("SPACE: Next step", True,
+                                    forecolor, "blue")
+        opt2_rect = opt2.get_rect(topleft=(mid_x + 20, 200))
+        screen.blit(opt2, opt2_rect)
 
     def __update_display_turn(self) -> None:
         """
@@ -280,17 +335,17 @@ class Graph:
         if screen is None:
             return
 
-        font = assets.FONT
+        font = assets.FONT_BIG
         if font is None:
             return
 
         width: int = screen.get_width()
-        mid_x: int = width // 2
+        mid_x: int = (width // 2) - 250
 
         current_turn: int = self.__process.turn if self.__process else 0
-        turn_label = font.render(f"Turn: {current_turn}", True,
+        turn_label = font.render(f"Move {current_turn}", True,
                                  "white", "blue")
-        turn_label_rect = turn_label.get_rect(topleft=(mid_x + 20, 250))
+        turn_label_rect = turn_label.get_rect(center=(mid_x + 250, 260))
         screen.blit(turn_label, turn_label_rect)
 
     def run(self) -> None:
@@ -300,6 +355,8 @@ class Graph:
         running: bool = True
         clock = pygame.time.Clock()
         self.__display_map()
+        auto_play: int = 0
+
         while running:
             clock.tick(60)
             pygame.display.flip()
@@ -310,9 +367,14 @@ class Graph:
                     if event.key == pygame.K_ESCAPE:
                         running = False
                     if event.key == pygame.K_SPACE:
-                        if self.__process is not None:
+                        if not self.__auto and self.__process is not None:
                             self.__process.next()
                             self.__update_display_turn()
+                    if event.key == pygame.K_a:
+                        self.__auto = not self.__auto
+                        self.__display_auto_option()
+                        self.__display_next_step_option()
+                        auto_play = 0
                 elif event.type == pygame.VIDEORESIZE:
                     width, height = event.size
                     if width < self.MIN_WIDTH:
@@ -324,4 +386,10 @@ class Graph:
                         pygame.display.set_mode((width, height),
                                                 pygame.RESIZABLE)
                     self.__display_map()
+            if self.__auto and self.__process is not None:
+                auto_play -= clock.get_time()
+                if auto_play <= 0:
+                    self.__process.next()
+                    self.__update_display_turn()
+                    auto_play = 250
         pygame.quit()

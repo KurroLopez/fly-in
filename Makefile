@@ -2,10 +2,10 @@ install:
 	uv add --dev flake8 mypy
 
 run:
-	uv run python3 main.py ${MAP}
+	uv run python3 fly-in.py ${MAP}
 
 debug:
-	uv run python -m pdb main.py ${MAP}
+	uv run python -m pdb fly-in.py ${MAP}
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -22,7 +22,7 @@ lint: install
 		--explicit-package-bases \
 		--exclude '^(venv|\.venv|env)/'
 
-lint-strict:
+lint-strict: install
 	uv run flake8 --exclude=.venv
 	uv run mypy . \
 		--strict \

@@ -1,6 +1,6 @@
 from enum import Enum
 
-from entities.entities import TypeHub
+from entities import TypeHub
 from .validator import Validator
 from map import Map
 from entities import Hub, Connection
@@ -185,4 +185,5 @@ class Parse():
             destination_hub = self.__map.hubs[connection.name_destination()]
         connection.origin = origin_hub
         connection.destination = destination_hub
+        connection.setup_connection_path()
         self.__map.add_connection(connection)
