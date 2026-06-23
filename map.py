@@ -79,3 +79,9 @@ class Map():
 
     def exist_end_hub(self) -> bool:
         return self.__end_hub is not None
+
+    def search_connection(self, hub1: str, hub2: str) -> Connection | None:
+        name: str = f"{hub1}-{hub2}"
+        if name in self.__connections:
+            return self.__connections[name]
+        return None

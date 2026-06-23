@@ -44,6 +44,9 @@ class Graph:
         assets.load_image(Path("assets"))
         self.__map = map
         self.__process = Process(map) if map is not None else None
+        if self.__process is not None:
+            self.__process.calculate_moves()
+            self.__process.restart_drones()
         self.__imgs = assets.IMG
         icon = self.__imgs.get("icon")
         if icon is not None:

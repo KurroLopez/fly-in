@@ -19,6 +19,30 @@ Create an engine that evaluates and processes the simulation in discrete turns, 
 ## Visual representation:
 Provide visual feedback on the simulation status through a graphical interface, a color-coded terminal, or both, to improve the user experience and facilitate understanding of the fleet's movement.
 
+# Algorithm & Implementation Strategy
+
+The `Process` class implements a turn-based cooperative pathfinding algorithm with explicit capacity reservation and restricted-zone transit handling.
+
+## 1\. Pre-computation
+
+The algorithm begins with Dijkstra search from the `end_hub`.
+
+- **Distance map**: All zone distances are initialized to infinity, except `end_hub` which is set to 0.
+- **Reverse expansion**: The search explores neighbors through the reverse adjacency list (`path_to_end`). Blocked zones are skipped.
+- **Terrain cost**: Movement cost is based on zone type: normal and priority zones cost `1`, restricted zones cost `2`. Priority zones receive a heuristic bias by subtracting `0.5` from their cost, encouraging route selection through them.
+- **Result**: The computed distance map is stored in `self.__shortest_paths` and used during move selection.
+
+## 2\. Turn Order and Drone Evaluation
+
+Drones are processed in a deterministic order each turn.
+
+- **Sorting**: The implementation attempts to sort drones with the heuristic map. Since the pathfinder looks up distances using name's drone current_zone, the order remains stable and reproducible.
+- **Effect**: Stable ordering avoids nondeterministic move conflicts when several drones compete for the same connection.
+
+## 3\. Per-turn Move Selection
+
+The algorithm runs a discrete turn loop until every drone reaches the goal.
+
 # Instructions
 
 To run the simulation use the following instruction:
@@ -31,5 +55,6 @@ To check the quality of the code, run the following instruction:
 ```bash
 make lint
 ```
+
 
 # Resources

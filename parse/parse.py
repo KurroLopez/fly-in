@@ -125,6 +125,7 @@ class Parse():
         if info_hub[0]:
             raise ValueError(f"The name of start_hub '{start_hub.name}' "
                              "is defined previously")
+        start_hub.is_start = True
         self.__map.start_hub = start_hub
 
     def __parse_end_hub(self, line: int, raw: str) -> None:
@@ -135,6 +136,7 @@ class Parse():
         if info_hub[0]:
             raise ValueError(f"The name of end_hub '{end_hub.name}' "
                              "is defined previously")
+        end_hub.is_end = True
         self.__map.end_hub = end_hub
 
     def __parse_hub(self, line_number: int, config_value: str) -> None:
