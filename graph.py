@@ -1,12 +1,16 @@
 import pygame
 from pygame.surface import Surface
 from map import Map
-from entities import Hub, ZoneType, Drone
+from entities import Hub, ZoneType
 import assets
 from pathlib import Path
 from pygame import Vector2
 from process import Process
-from typing import List, Generator
+from typing import List, Generator, Tuple
+import format
+
+# (drone, origin, destination, in_transit)
+InfoMove = Tuple[str, Hub, Hub, bool]
 
 
 class Graph:
@@ -49,6 +53,9 @@ class Graph:
         if self.__process is not None:
             self.__process.calculate_moves()
             self.__process.restart_drones()
+            self.__event: Generator[List[InfoMove], None, None] = \
+                self.__process.generator_next()
+
         self.__imgs = assets.IMG
         icon = self.__imgs.get("icon")
         if icon is not None:
@@ -339,7 +346,7 @@ class Graph:
         width: int = screen.get_width()
         mid_x: int = (width // 2) - 250
 
-        screen: Surface | None = pygame.display.get_surface()
+        screen = pygame.display.get_surface()
         if screen is None:
             return
 
@@ -386,20 +393,26 @@ class Graph:
         for drone in self.__process.drones:
             drone.draw(pygame.display.get_surface())
 
-    def __next(self):
-        move_info: List[Drone, Hub, Hub, bool]
-        event: Generator[List[Drone, Hub, Hub, bool],
-                         None, None] = self.__process.generator_next()
+    def __next(self) -> None:
+        if self.__process is None:
+            return
+        move_info: List[InfoMove]
         try:
-            move_info = next(event)
-            for drone, _, _, _ in move_info:
-                drone.print()
+            move_info = next(self.__event)
+            print(f"\n{format.BOLD}Move {self.__process.turn}:"
+                  f"{format.CLEAR}", end=" ")
+            for drone_id, _, _, _ in move_info:
+                drone = self.__process.search_dron(drone_id)
+                if drone:
+                    drone.print()
             self.__display_drones()
             self.__update_display_turn()
-        except GeneratorExit:
-            self.__auto = 0
+        except StopIteration:
+            self.__auto = False
             self.__has_finised = True
-            self.__disable_turns()
+            self.__disable_turn()
+            print(f"\n{format.BOLD}Total moves: {self.__process.turn}"
+                  f"{format.CLEAR}")
 
     def run(self) -> None:
         """

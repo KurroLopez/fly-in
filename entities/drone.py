@@ -17,17 +17,21 @@ class Drone:
     __finished: bool
     __final_path: List[Tuple[int, str]]
     __in_transit: bool
+    __old_position: Vector2
+    __num_id: int
 
     id: str = ""
 
     def __init__(self, id: int):
         self.id = f"D{id}"
+        self.__num_id = id
         assets.load_image(Path("assets"))
         self.img = assets.get_image("drone-small")
         self.__penalty = False
         self.__finished = False
         self.__final_path = []
         self.__in_transit = False
+        self.__old_position = Vector2(0, 0)
 
     @property
     def current_hub(self) -> Hub | None:
@@ -41,6 +45,7 @@ class Drone:
         """
         Set the current hub for the drone.
         """
+        self.__old_position = self.position
         self.__current_hub = hub
 
     @property
@@ -84,7 +89,6 @@ class Drone:
 
             if self.__next_hub.is_end:
                 self.__finished = True
-            print(f"{self.id}:{self.__next_hub.name}")
 
     def add_final_path(self, turn: int, name: str) -> None:
         """
@@ -98,7 +102,7 @@ class Drone:
         self.__final_path.append((turn, name))
 
     @property
-    def final_path(self) -> List[int, str]:
+    def final_path(self) -> List[Tuple[int, str]]:
         """
         Return the list of final path
         """
@@ -123,11 +127,14 @@ class Drone:
         Print the drone's final path.
         """
         position: str = ""
-        if self.__in_transit:
-            position = f"{self.__current_hub.name}-{self.__next_hub.name}"
-        else:
-            position = self.__current_hub.name
-        print(f"{self.id}: {position}", end=' ')
+        cur_hub: Hub | None = self.__current_hub
+        next_hub: Hub | None = self.__next_hub
+        if cur_hub is not None and next_hub is not None:
+            if self.__in_transit:
+                position = f"{cur_hub.name}-{next_hub.name}"
+            else:
+                position = cur_hub.name
+        print(f"{self.id}-{position}", end=' ')
 
     def draw(self, surface: Surface) -> None:
         """
@@ -139,6 +146,14 @@ class Drone:
         if self.img is not None:
             pos: Vector2 = self.position
             surface.blit(self.img, pos)
+            self.__old_position = pos
+
+    @property
+    def old_position(self) -> Vector2:
+        """
+        Get the previous position of the drone.
+        """
+        return self.__old_position
 
     @property
     def position(self) -> Vector2:
@@ -159,8 +174,10 @@ class Drone:
                 distance = direction.length()
                 if distance > 0:
                     direction.normalize_ip()
-                    distance = distance * 0.5
-                    current_position = pos_origin + direction * distance
+                    transit_position = pos_origin + direction * \
+                        (distance * 0.5)
+                    current_position = self.__old_position.lerp(
+                        transit_position, 0.5)
                 else:
                     current_position = pos_origin
             else:

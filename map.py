@@ -89,11 +89,12 @@ class Map():
     def search_hub(self, hub: str) -> Hub | None:
         hub_find: Hub | None
         hub_find = None
-        if self.exist_hub(hub):
-            if self.__start_hub.name == hub:
+        exists, type_hub = self.exist_hub(hub)
+        if exists:
+            if type_hub == TypeHub.START:
                 hub_find = self.__start_hub
-            elif self.__end_hub.name == hub:
+            elif type_hub == TypeHub.END:
                 hub_find = self.__end_hub
-            else:
+            elif type_hub == TypeHub.HUB:
                 hub_find = self.__hubs[hub]
         return hub_find

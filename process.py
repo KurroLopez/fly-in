@@ -3,13 +3,16 @@ from entities import Drone, Hub, ZoneType, Connection
 from typing import Dict, List, Tuple, Generator
 from collections import defaultdict
 
+# (drone, origin, destination, in_transit)
+InfoMove = Tuple[str, Hub, Hub, bool]
+
 
 class Process:
     __turn: int
     __map: Map
     __drones: list[Drone]
     __shortest_paths: Dict[str, float]
-    __all_movies: Dict[int, List[Drone, Hub, Hub, bool]]
+    __all_moves: Dict[int, List[InfoMove]]
 
     def __init__(self, map: Map) -> None:
         """
@@ -18,7 +21,7 @@ class Process:
         self.__map = map
         self.__turn = 0
         self.__drones = []
-        self.__all_movies = defaultdict(list)
+        self.__all_moves = defaultdict(list)
 
         for id in range(self.__map.nb_drones):
             drone = Drone(id)
@@ -40,7 +43,7 @@ class Process:
         """
         return self.__turn
 
-    def __search_dron(self, id: str) -> Drone | None:
+    def search_dron(self, id: str) -> Drone | None:
         drone_find: Drone | None = None
         for dron in self.__drones:
             if dron.id == id:
@@ -48,26 +51,26 @@ class Process:
                 break
         return drone_find
 
-    def generator_next(self) -> Generator[List[Drone, Hub, Hub, bool],
+    def generator_next(self) -> Generator[List[InfoMove],
                                           None, None]:
         """
         Return the next movement of the drones in this turn
         """
-        for turn in self.__all_movies.keys():
-            info_turn: List[Drone, Hub, Hub, bool] = self.__all_movies[turn]
+        for turn in self.__all_moves.keys():
+            info_turn: List[InfoMove] = self.__all_moves[turn]
             """ Update dron position """
             for item in info_turn:
-                dron_id: Drone = item[0].id
+                dronid: str = item[0]
                 origin: Hub = item[1]
                 dest: Hub = item[2]
                 in_transit: bool = item[3]
-                dron: Drone | None = self.__search_dron(dron_id)
+                dron: Drone | None = self.search_dron(dronid)
                 if dron is not None:
                     dron.current_hub = origin
                     dron.next_hub = dest
                     dron.in_transit = in_transit
             self.__turn = turn
-            yield self.__all_movies[turn]
+            yield self.__all_moves[turn]
 
     def restart_drones(self) -> None:
         """
@@ -139,12 +142,14 @@ class Process:
         """
         turn: int = 0
         in_transit: Dict[str, Tuple[Hub, int, str]] = {}
+        drone: Drone | None
+        conn: Connection | None = None
 
         while not all(drone.is_finished for drone in self.__drones):
             turn += 1
             from_to: Tuple[str, str]
             from_to_used: Dict[Tuple[str, str], int] = defaultdict(int)
-            moves: List[Tuple[Drone, Hub | None, bool, str]] = []
+            moves: List[Tuple[str, Hub | None, bool, str]] = []
             current_hub: Hub | None
             zone_count: Dict[str, int] = {}
             for drone in self.__drones:
@@ -164,7 +169,7 @@ class Process:
                 if current_hub is None:
                     continue
                 if drone.is_finished:
-                    moves.append((drone, current_hub, False, ""))
+                    moves.append((drone.id, current_hub, False, ""))
                     continue
                 if drone.id in in_transit:
                     dest_hub, remaining_turns, conn_name = in_transit[drone.id]
@@ -176,11 +181,11 @@ class Process:
                     if remaining_turns == 0:
                         total_zone_count[dest_hub.name] += 1
                         del in_transit[drone.id]
-                        moves.append((drone, dest_hub, False, conn_name))
+                        moves.append((drone.id, dest_hub, False, conn_name))
                     else:
                         in_transit[drone.id] = (dest_hub, remaining_turns,
                                                 conn_name)
-                        moves.append((drone, None, True, conn_name))
+                        moves.append((drone.id, None, True, conn_name))
                     continue
 
                 best_distance: float = float("inf")
@@ -219,26 +224,29 @@ class Process:
                     if best_neighbor.properties.type == ZoneType.RESTRICTED:
                         conn_name = f"{best_conn[0]}-{best_conn[1]}"
                         in_transit[drone.id] = (best_neighbor, 1, conn_name)
-                        moves.append((drone, best_neighbor, True, conn_name))
+                        moves.append((drone.id, best_neighbor, True,
+                                      conn_name))
                     else:
-                        moves.append((drone, best_neighbor, False, ""))
+                        moves.append((drone.id, best_neighbor, False, ""))
                 else:
-                    moves.append((drone, current_hub, False, ""))
+                    moves.append((drone.id, current_hub, False, ""))
 
-            for drone, dest, is_transit, conn in moves:
-                drone.current_hub = dest
+            for drone_id, dest, is_transit, conn_name in moves:
+                drone = self.search_dron(drone_id)
+                if drone is not None:
+                    drone.current_hub = dest
 
-                if is_transit and conn:
-                    drone.add_final_path(turn, conn)
-                elif dest:
-                    drone.add_final_path(turn, dest.name)
-                    if not dest.is_end:
-                        if not self.is_valid_path(dest):
-                            raise ValueError("Invalid path")
-                    else:
-                        drone.finished(True)
+                    if is_transit and conn_name:
+                        drone.add_final_path(turn, conn_name)
+                    elif dest:
+                        drone.add_final_path(turn, dest.name)
+                        if not dest.is_end:
+                            if not self.is_valid_path(dest):
+                                raise ValueError("Invalid path")
+                        else:
+                            drone.finished(True)
 
-        """ Save the all movies of all drones by turn """
+        """ Save the all moves of all drones by turn """
         origin: Hub | None = None
         destination: Hub | None = None
         for drone in sorted(self.__drones, key=lambda d: d.id):
@@ -253,20 +261,19 @@ class Process:
                 origin = self.__map.search_hub(loc)
                 if origin is None:
                     """ Its a connection, so the drone is in transit """
-                    orig_dest: Tuple[str, str] = loc.split('-')
+                    orig_dest: List[str] = loc.split('-')
                     orig_name: str = orig_dest[0]
                     dest_name: str = orig_dest[1]
-                    conn: Connection | None = None
                     conn = self.__map.search_connection(orig_name, dest_name)
                     if conn is not None:
                         origin = self.__map.search_hub(orig_name)
                         destination = self.__map.search_hub(dest_name)
                         if origin is not None and destination is not None:
-                            self.__all_moves[turn].append((drone, origin,
+                            self.__all_moves[turn].append((drone.id, origin,
                                                            destination, True))
                 else:
-                    self.__all_movies[turn].append((drone, origin,
-                                                    origin, False))
+                    self.__all_moves[turn].append((drone.id, origin,
+                                                   origin, False))
                 if origin is not None:
                     if origin.is_end:
                         break
