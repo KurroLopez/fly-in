@@ -16,17 +16,18 @@ class Drone:
     __penalty: bool
     __finished: bool
     __final_path: List[Tuple[int, str]]
+    __in_transit: bool
 
     id: str = ""
 
-    def __init__(self, id: int, position: Vector2):
+    def __init__(self, id: int):
         self.id = f"D{id}"
-        self.position = position
         assets.load_image(Path("assets"))
         self.img = assets.get_image("drone-small")
         self.__penalty = False
         self.__finished = False
         self.__final_path = []
+        self.__in_transit = False
 
     @property
     def current_hub(self) -> Hub | None:
@@ -95,3 +96,73 @@ class Drone:
             is moving to.
         """
         self.__final_path.append((turn, name))
+
+    @property
+    def final_path(self) -> List[int, str]:
+        """
+        Return the list of final path
+        """
+        return self.__final_path
+
+    @property
+    def in_transit(self) -> bool:
+        """
+        Check if the drone is currently in transit between hubs.
+        """
+        return self.__in_transit
+
+    @in_transit.setter
+    def in_transit(self, status: bool) -> None:
+        """
+        Set the in-transit status of the drone.
+        """
+        self.__in_transit = status
+
+    def print(self) -> None:
+        """
+        Print the drone's final path.
+        """
+        position: str = ""
+        if self.__in_transit:
+            position = f"{self.__current_hub.name}-{self.__next_hub.name}"
+        else:
+            position = self.__current_hub.name
+        print(f"{self.id}: {position}", end=' ')
+
+    def draw(self, surface: Surface) -> None:
+        """
+        Draw the drone on the given surface.
+
+        Args:
+            surface (Surface): The surface to draw the drone on.
+        """
+        if self.img is not None:
+            pos: Vector2 = self.position
+            surface.blit(self.img, pos)
+
+    @property
+    def position(self) -> Vector2:
+        """
+        Get the current position of the drone.
+
+        Returns:
+            Vector2: The current position of the drone.
+        """
+        current_position: Vector2 = Vector2(0, 0)
+        chub: Hub | None = self.__current_hub
+        nhub: Hub | None = self.__next_hub
+        if chub is not None and nhub is not None:
+            pos_origin = chub.position
+            pos_destination = nhub.position
+            if self.__in_transit:
+                direction = pos_destination - pos_origin
+                distance = direction.length()
+                if distance > 0:
+                    direction.normalize_ip()
+                    distance = distance * 0.5
+                    current_position = pos_origin + direction * distance
+                else:
+                    current_position = pos_origin
+            else:
+                current_position = chub.position
+        return current_position

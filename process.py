@@ -1,7 +1,6 @@
 from map import Map
-from entities import Drone, Hub, ZoneType
-from pygame import Vector2
-from typing import Dict, List, Tuple
+from entities import Drone, Hub, ZoneType, Connection
+from typing import Dict, List, Tuple, Generator
 from collections import defaultdict
 
 
@@ -10,6 +9,7 @@ class Process:
     __map: Map
     __drones: list[Drone]
     __shortest_paths: Dict[str, float]
+    __all_movies: Dict[int, List[Drone, Hub, Hub, bool]]
 
     def __init__(self, map: Map) -> None:
         """
@@ -18,14 +18,10 @@ class Process:
         self.__map = map
         self.__turn = 0
         self.__drones = []
-        initial_position: Vector2
-        if self.__map.start_hub is not None:
-            initial_position = self.__map.start_hub.position
-        else:
-            initial_position = Vector2(0, 0)
+        self.__all_movies = defaultdict(list)
 
         for id in range(self.__map.nb_drones):
-            drone = Drone(id, initial_position)
+            drone = Drone(id)
             drone.current_hub = self.__map.start_hub
             drone.add_final_path(0, self.__map.start_hub.name
                                  if self.__map.start_hub else "")
@@ -44,37 +40,54 @@ class Process:
         """
         return self.__turn
 
-    def next(self) -> None:
-        """
-        Move to the next step in the process.
-        """
-        if self.__drones is None:
-            return
+    def __search_dron(self, id: str) -> Drone | None:
+        drone_find: Drone | None = None
+        for dron in self.__drones:
+            if dron.id == id:
+                drone_find = dron
+                break
+        return drone_find
 
-        total_finished: int = sum(drone.is_finished for drone in self.__drones)
-        if total_finished == len(self.__drones):
-            return
-
-        for drone in self.__drones:
-            if not drone.is_finished:
-                drone.move_to_next_hub()
-        self.__turn += 1
+    def generator_next(self) -> Generator[List[Drone, Hub, Hub, bool],
+                                          None, None]:
+        """
+        Return the next movement of the drones in this turn
+        """
+        for turn in self.__all_movies.keys():
+            info_turn: List[Drone, Hub, Hub, bool] = self.__all_movies[turn]
+            """ Update dron position """
+            for item in info_turn:
+                dron_id: Drone = item[0].id
+                origin: Hub = item[1]
+                dest: Hub = item[2]
+                in_transit: bool = item[3]
+                dron: Drone | None = self.__search_dron(dron_id)
+                if dron is not None:
+                    dron.current_hub = origin
+                    dron.next_hub = dest
+                    dron.in_transit = in_transit
+            self.__turn = turn
+            yield self.__all_movies[turn]
 
     def restart_drones(self) -> None:
         """
         Restart all drones to their initial state.
         """
-        initial_position: Vector2
-        if self.__map.start_hub is not None:
-            initial_position = self.__map.start_hub.position
-        else:
-            initial_position = Vector2(0, 0)
-
         for drone in self.__drones:
             drone.current_hub = self.__map.start_hub
-            drone.next_hub = None
+            drone.next_hub = self.__map.start_hub
+            drone.in_transit = False
             drone.finished(False)
-            drone.position = initial_position
+
+    @property
+    def drones(self) -> List[Drone]:
+        """
+        Get the list of drones in the process.
+
+        return:
+            List[Drone]: The list of drones.
+        """
+        return self.__drones
 
     def __calculate_costs(self) -> Dict[str, float]:
         """
@@ -126,7 +139,7 @@ class Process:
         """
         turn: int = 0
         in_transit: Dict[str, Tuple[Hub, int, str]] = {}
-    
+
         while not all(drone.is_finished for drone in self.__drones):
             turn += 1
             from_to: Tuple[str, str]
@@ -224,6 +237,39 @@ class Process:
                             raise ValueError("Invalid path")
                     else:
                         drone.finished(True)
+
+        """ Save the all movies of all drones by turn """
+        origin: Hub | None = None
+        destination: Hub | None = None
+        for drone in sorted(self.__drones, key=lambda d: d.id):
+            if not drone.final_path:
+                continue
+            for i in range(1, len(drone.final_path)):
+                turn, loc = drone.final_path[i]
+                _, prev_loc = drone.final_path[i - 1]
+                if loc == prev_loc:
+                    continue
+                """ Search the loc hub """
+                origin = self.__map.search_hub(loc)
+                if origin is None:
+                    """ Its a connection, so the drone is in transit """
+                    orig_dest: Tuple[str, str] = loc.split('-')
+                    orig_name: str = orig_dest[0]
+                    dest_name: str = orig_dest[1]
+                    conn: Connection | None = None
+                    conn = self.__map.search_connection(orig_name, dest_name)
+                    if conn is not None:
+                        origin = self.__map.search_hub(orig_name)
+                        destination = self.__map.search_hub(dest_name)
+                        if origin is not None and destination is not None:
+                            self.__all_moves[turn].append((drone, origin,
+                                                           destination, True))
+                else:
+                    self.__all_movies[turn].append((drone, origin,
+                                                    origin, False))
+                if origin is not None:
+                    if origin.is_end:
+                        break
 
     def is_valid_path(self, hub: Hub) -> bool:
         """Check if there the valid path or not from start to end

@@ -53,4 +53,6 @@ def load_image(path: Path) -> None:
     for f in path.iterdir():
         if f.suffix == '.png':
             name: str = str(f).removeprefix('assets/').removesuffix('.png')
+            """ for windows path """
+            # name: str = str(f).removeprefix('assets\\').removesuffix('.png')
             IMG[name] = image.load(f).convert_alpha()

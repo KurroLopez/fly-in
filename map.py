@@ -85,3 +85,15 @@ class Map():
         if name in self.__connections:
             return self.__connections[name]
         return None
+
+    def search_hub(self, hub: str) -> Hub | None:
+        hub_find: Hub | None
+        hub_find = None
+        if self.exist_hub(hub):
+            if self.__start_hub.name == hub:
+                hub_find = self.__start_hub
+            elif self.__end_hub.name == hub:
+                hub_find = self.__end_hub
+            else:
+                hub_find = self.__hubs[hub]
+        return hub_find

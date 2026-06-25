@@ -1,11 +1,12 @@
 import pygame
 from pygame.surface import Surface
 from map import Map
-from entities import Hub, ZoneType
+from entities import Hub, ZoneType, Drone
 import assets
 from pathlib import Path
 from pygame import Vector2
 from process import Process
+from typing import List, Generator
 
 
 class Graph:
@@ -25,6 +26,7 @@ class Graph:
     __process: Process | None = None
     __imgs: dict[str, Surface] = {}
     __auto: bool = False
+    __has_finised: bool = False
 
     def __init__(self, title: str = "Fly-in",
                  width: int = INITIAL_WIDTH,
@@ -278,6 +280,29 @@ class Graph:
         self.__display_next_step_option()
         self.__update_display_turn()
 
+    def __disable_turn(self) -> None:
+        """
+        Disable turn option because the process has finished
+        """
+        screen: Surface | None = pygame.display.get_surface()
+        if screen is None:
+            return
+
+        width: int = screen.get_width()
+        mid_x: int = (width // 2) - 250
+
+        font = assets.FONT
+        if font is None:
+            return
+        text: str = "A: Auto OFF"
+        opt1: Surface = font.render(text, True, "dimgray", "blue")
+        opt1_rect = opt1.get_rect(topleft=(mid_x + 20, 150))
+        screen.blit(opt1, opt1_rect)
+        opt2: Surface = font.render("SPACE: Next step", True,
+                                    "dimgray", "blue")
+        opt2_rect = opt2.get_rect(topleft=(mid_x + 20, 200))
+        screen.blit(opt2, opt2_rect)
+
     def __display_auto_option(self) -> None:
         """
         Display the "Auto" option on the screen.
@@ -351,6 +376,31 @@ class Graph:
         turn_label_rect = turn_label.get_rect(center=(mid_x + 250, 260))
         screen.blit(turn_label, turn_label_rect)
 
+    def __display_drones(self) -> None:
+        """
+        Display all drones on the screen.
+        """
+        if self.__process is None:
+            return
+
+        for drone in self.__process.drones:
+            drone.draw(pygame.display.get_surface())
+
+    def __next(self):
+        move_info: List[Drone, Hub, Hub, bool]
+        event: Generator[List[Drone, Hub, Hub, bool],
+                         None, None] = self.__process.generator_next()
+        try:
+            move_info = next(event)
+            for drone, _, _, _ in move_info:
+                drone.print()
+            self.__display_drones()
+            self.__update_display_turn()
+        except GeneratorExit:
+            self.__auto = 0
+            self.__has_finised = True
+            self.__disable_turns()
+
     def run(self) -> None:
         """
         Run the main loop of the graph.
@@ -359,7 +409,7 @@ class Graph:
         clock = pygame.time.Clock()
         self.__display_map()
         auto_play: int = 0
-
+        self.__display_drones()
         while running:
             clock.tick(60)
             pygame.display.flip()
@@ -370,14 +420,15 @@ class Graph:
                     if event.key == pygame.K_ESCAPE:
                         running = False
                     if event.key == pygame.K_SPACE:
-                        if not self.__auto and self.__process is not None:
-                            self.__process.next()
-                            self.__update_display_turn()
+                        if not self.__has_finised:
+                            if not self.__auto and self.__process is not None:
+                                self.__next()
                     if event.key == pygame.K_a:
-                        self.__auto = not self.__auto
-                        self.__display_auto_option()
-                        self.__display_next_step_option()
-                        auto_play = 0
+                        if not self.__has_finised:
+                            self.__auto = not self.__auto
+                            self.__display_auto_option()
+                            self.__display_next_step_option()
+                            auto_play = 0
                 elif event.type == pygame.VIDEORESIZE:
                     width, height = event.size
                     if width < self.MIN_WIDTH:
@@ -389,10 +440,10 @@ class Graph:
                         pygame.display.set_mode((width, height),
                                                 pygame.RESIZABLE)
                     self.__display_map()
-            if self.__auto and self.__process is not None:
-                auto_play -= clock.get_time()
-                if auto_play <= 0:
-                    self.__process.next()
-                    self.__update_display_turn()
-                    auto_play = 250
+            if not self.__has_finised:
+                if self.__auto and self.__process is not None:
+                    auto_play -= clock.get_time()
+                    if auto_play <= 0:
+                        self.__next()
+                        auto_play = 250
         pygame.quit()
