@@ -76,8 +76,8 @@ class Graph:
         size = surface.get_size()
         bg_scaled: Surface = pygame.transform.smoothscale(self.__bg, size)
         surface.blit(bg_scaled, (0, 0))
-        pygame.display.flip()
-        pygame.display.update()
+        # pygame.display.flip()
+        # pygame.display.update()
 
     def __init_background(self) -> None:
         """
@@ -237,8 +237,8 @@ class Graph:
             self.__display_connection(start_hub, end_hub,
                                       connection.properties.max_link_capacity)
 
-        pygame.display.flip()
-        pygame.display.update()
+        # pygame.display.flip()
+        # pygame.display.update()
 
     def __display_menu(self) -> None:
         """
@@ -424,8 +424,6 @@ class Graph:
         auto_play: int = 0
         self.__display_drones()
         while running:
-            clock.tick(60)
-            pygame.display.flip()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -452,7 +450,17 @@ class Graph:
                         height = self.MIN_HEIGHT
                         pygame.display.set_mode((width, height),
                                                 pygame.RESIZABLE)
-                    self.__display_map()
+                        self.__display_map()
+
+            self.__display_map()
+            if self.__process is not None:
+                for drone in self.__process.drones:
+                    drone.update()
+                    drone.draw(pygame.display.get_surface())
+
+            pygame.display.flip()
+            clock.tick(60)
+
             if not self.__has_finised:
                 if self.__auto and self.__process is not None:
                     auto_play -= clock.get_time()

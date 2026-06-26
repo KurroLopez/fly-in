@@ -1,5 +1,5 @@
 from typing import Tuple, List
-from pygame import Surface, Vector2
+from pygame import Surface, Vector2, Rect
 import assets
 from .hub import Hub
 from pathlib import Path
@@ -17,21 +17,24 @@ class Drone:
     __finished: bool
     __final_path: List[Tuple[int, str]]
     __in_transit: bool
-    __old_position: Vector2
-    __num_id: int
+    __pos: Vector2
+    __speed: Vector2
+    __rect: Rect
 
     id: str = ""
 
     def __init__(self, id: int):
         self.id = f"D{id}"
-        self.__num_id = id
+        
         assets.load_image(Path("assets"))
         self.img = assets.get_image("drone-small")
         self.__penalty = False
         self.__finished = False
         self.__final_path = []
         self.__in_transit = False
-        self.__old_position = Vector2(0, 0)
+        self.__pos = Vector2(0, 0)
+        self.__speed = Vector2(0, 0)
+        self.__rect = self.img.get_rect(center=self.__pos)
 
     @property
     def current_hub(self) -> Hub | None:
@@ -45,7 +48,8 @@ class Drone:
         """
         Set the current hub for the drone.
         """
-        self.__old_position = self.position
+        if hub is not None and self.__pos == Vector2(0, 0):
+            self.__pos = hub.position
         self.__current_hub = hub
 
     @property
@@ -144,16 +148,14 @@ class Drone:
             surface (Surface): The surface to draw the drone on.
         """
         if self.img is not None:
-            pos: Vector2 = self.position
-            surface.blit(self.img, pos)
-            self.__old_position = pos
+            surface.blit(self.img, self.__rect.move(self.__pos))
 
     @property
     def old_position(self) -> Vector2:
         """
         Get the previous position of the drone.
         """
-        return self.__old_position
+        return self.__pos
 
     @property
     def position(self) -> Vector2:
@@ -176,10 +178,21 @@ class Drone:
                     direction.normalize_ip()
                     transit_position = pos_origin + direction * \
                         (distance * 0.5)
-                    current_position = self.__old_position.lerp(
+                    current_position = self.__pos.lerp(
                         transit_position, 0.5)
                 else:
                     current_position = pos_origin
             else:
                 current_position = chub.position
         return current_position
+
+    def update(self) -> None:
+        "Update this object's visual information."
+        self.__speed *= 0.75
+        dest_pos = self.position
+        wishdir = dest_pos - self.__pos
+        if wishdir.length() > 32:
+            self.__speed += (dest_pos - self.__pos).normalize() * 3
+        else:
+            self.__speed *= 0.5
+        self.__pos += self.__speed
