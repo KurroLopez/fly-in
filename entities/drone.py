@@ -48,9 +48,8 @@ class Drone:
         """
         Set the current hub for the drone.
         """
-        if hub is not None and self.__pos == Vector2(0, 0):
-            self.__pos = hub.position
         self.__current_hub = hub
+        self.__pos = hub.position
 
     @property
     def next_hub(self) -> Hub | None:
@@ -137,7 +136,7 @@ class Drone:
             if self.__in_transit:
                 position = f"{cur_hub.name}-{next_hub.name}"
             else:
-                position = cur_hub.name
+                position = next_hub.name
         print(f"{self.id}-{position}", end=' ')
 
     def draw(self, surface: Surface) -> None:
@@ -189,7 +188,10 @@ class Drone:
     def update(self) -> None:
         "Update this object's visual information."
         self.__speed *= 0.75
-        dest_pos = self.position
+        if self.__next_hub is not None:
+            dest_pos = self.__next_hub.position
+        else:
+            dest_pos = self.position
         wishdir = dest_pos - self.__pos
         if wishdir.length() > 32:
             self.__speed += (dest_pos - self.__pos).normalize() * 3

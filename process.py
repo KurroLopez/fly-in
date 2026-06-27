@@ -61,11 +61,16 @@ class Process:
             """ Update dron position """
             for item in info_turn:
                 dronid: str = item[0]
+                dron: Drone | None = self.search_dron(dronid)
+                in_transit: bool = item[3]
                 origin: Hub = item[1]
                 dest: Hub = item[2]
-                in_transit: bool = item[3]
-                dron: Drone | None = self.search_dron(dronid)
                 if dron is not None:
+                    if not in_transit:
+                        org_name: str = dron.final_path[turn - 1][1]
+                        des_name: str = dron.final_path[turn][1]
+                        origin = self.__map.search_hub(org_name)
+                        dest = self.__map.search_hub(des_name)
                     dron.current_hub = origin
                     dron.next_hub = dest
                     dron.in_transit = in_transit
@@ -81,6 +86,7 @@ class Process:
             drone.next_hub = self.__map.start_hub
             drone.in_transit = False
             drone.finished(False)
+        self.__turn = 0
 
     @property
     def drones(self) -> List[Drone]:
@@ -258,10 +264,11 @@ class Process:
                 if loc == prev_loc:
                     continue
                 """ Search the loc hub """
-                origin = self.__map.search_hub(loc)
+                origin = self.__map.search_hub(prev_loc)
+                destination = self.__map.search_hub(loc)
                 if origin is None:
                     """ Its a connection, so the drone is in transit """
-                    orig_dest: List[str] = loc.split('-')
+                    orig_dest: List[str] = prev_loc.split('-')
                     orig_name: str = orig_dest[0]
                     dest_name: str = orig_dest[1]
                     conn = self.__map.search_connection(orig_name, dest_name)
@@ -272,8 +279,15 @@ class Process:
                             self.__all_moves[turn].append((drone.id, origin,
                                                            destination, True))
                 else:
-                    self.__all_moves[turn].append((drone.id, origin,
-                                                   origin, False))
+                    if destination is not None:
+                        self.__all_moves[turn].append((drone.id, origin,
+                                                       destination, False))
+                    else:
+                        """ Its a connection, so the drone is in transit """
+                        orig_dest: List[str] = loc.split('-')
+                        destination = self.__map.search_hub(loc)
+                        self.__all_moves[turn].append((drone.id, origin,
+                                                       destination, True))
                 if origin is not None:
                     if origin.is_end:
                         break

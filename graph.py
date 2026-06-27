@@ -237,9 +237,6 @@ class Graph:
             self.__display_connection(start_hub, end_hub,
                                       connection.properties.max_link_capacity)
 
-        # pygame.display.flip()
-        # pygame.display.update()
-
     def __display_menu(self) -> None:
         """
         Display the menu on the screen.
@@ -417,6 +414,24 @@ class Graph:
             print(f"\n{format.BOLD}Total moves: {self.__process.turn}"
                   f"{format.CLEAR}")
 
+    def __restart_all(self) -> None:
+        """
+        Restart the process and reset all drones to their initial state.
+        """
+        self.__process.restart_drones()
+        self.__event = self.__process.generator_next()
+        self.__has_finised = False
+        self.__auto = False
+        self.__display_map()
+        for drone in self.__process.drones:
+            drone.update()
+            drone.draw(pygame.display.get_surface())
+        self.__update_display_turn()
+        self.__display_menu()
+        self.__display_drones()
+        print(f"\n{format.BOLD}{format.WARNING}Process restarted."
+              f"{format.CLEAR}")
+
     def run(self) -> None:
         """
         Run the main loop of the graph.
@@ -437,6 +452,9 @@ class Graph:
                         if not self.__has_finised:
                             if not self.__auto and self.__process is not None:
                                 self.__next()
+                    if event.key == pygame.K_r:
+                        if self.__has_finised:
+                            self.__restart_all()
                     if event.key == pygame.K_a:
                         if not self.__has_finised:
                             self.__auto = not self.__auto
@@ -455,6 +473,13 @@ class Graph:
                                                 pygame.RESIZABLE)
                         self.__display_map()
 
+            if not self.__has_finised:
+                if self.__auto and self.__process is not None:
+                    auto_play -= clock.get_time()
+                    if auto_play <= 0:
+                        self.__next()
+                        auto_play = 250
+
             self.__display_map()
             if self.__process is not None:
                 for drone in self.__process.drones:
@@ -463,11 +488,4 @@ class Graph:
 
             pygame.display.flip()
             clock.tick(60)
-
-            if not self.__has_finised:
-                if self.__auto and self.__process is not None:
-                    auto_play -= clock.get_time()
-                    if auto_play <= 0:
-                        self.__next()
-                        auto_play = 250
         pygame.quit()
