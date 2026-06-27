@@ -283,8 +283,11 @@ class Graph:
         opt1_rect = opt1.get_rect(topleft=(mid_x + 20, 100))
         screen.blit(opt1, opt1_rect)
 
-        self.__display_auto_option()
-        self.__display_next_step_option()
+        if not self.__has_finised:
+            self.__display_auto_option()
+            self.__display_next_step_option()
+        else:
+            self.__disable_turn()
         self.__update_display_turn()
 
     def __disable_turn(self) -> None:
