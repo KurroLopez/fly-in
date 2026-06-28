@@ -399,14 +399,19 @@ class Graph:
         move_info: List[InfoMove]
         try:
             move_info = next(self.__event)
-            print(f"\n{format.BOLD}Move {self.__process.turn}:"
+            print(f"{format.BOLD}Move {self.__process.turn}:"
                   f"{format.CLEAR}", end=" ")
             for drone_id, _, _, _ in move_info:
                 drone = self.__process.search_dron(drone_id)
                 if drone:
                     drone.print()
-            self.__display_drones()
+            print()
             self.__update_display_turn()
+            if self.__process.turn == self.__process.total_moves:
+                self.__has_finised = True
+                self.__disable_turn()
+                print(f"\n{format.BOLD}Total moves: {self.__process.turn}"
+                      f"{format.CLEAR}")
         except StopIteration:
             self.__auto = False
             self.__has_finised = True
@@ -478,7 +483,7 @@ class Graph:
                     auto_play -= clock.get_time()
                     if auto_play <= 0:
                         self.__next()
-                        auto_play = 250
+                        auto_play = 1000
 
             self.__display_map()
             if self.__process is not None:

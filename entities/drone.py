@@ -25,7 +25,6 @@ class Drone:
 
     def __init__(self, id: int):
         self.id = f"D{id}"
-        
         assets.load_image(Path("assets"))
         self.img = assets.get_image("drone-small")
         self.__penalty = False
@@ -49,7 +48,6 @@ class Drone:
         Set the current hub for the drone.
         """
         self.__current_hub = hub
-        self.__pos = hub.position
 
     @property
     def next_hub(self) -> Hub | None:
@@ -189,17 +187,38 @@ class Drone:
 
     def update(self) -> None:
         "Update this object's visual information."
-        if self.__pos == self.calculate_position:
-            return
-        self.__speed *= 0.75
+        # dest_pos = self.calculate_position
+        # const_velocity = 10.0
+        # if self.__pos == dest_pos:
+        #     self.__speed = Vector2(0, 0)
+        #     return
+
+        # wishdir = dest_pos - self.__pos
+        # distance = wishdir.length()
+
+        # if distance <= const_velocity or distance < 1.0:
+        #     self.__pos = dest_pos
+        #     self.__speed = Vector2(0, 0)
+        # else:
+        #     self.__speed = wishdir.normalize() * const_velocity
+        #     self.__pos += self.__speed
+
         dest_pos = self.calculate_position
+        if self.__pos == dest_pos:
+            return
         wishdir = dest_pos - self.__pos
-        if wishdir.length() > 32:
-            self.__speed += (dest_pos - self.__pos).normalize() * 3
+        distance = wishdir.length()
+
+        if distance < 1.0:
+            self.__pos = dest_pos
+            self.__speed = Vector2(0, 0)
+            return
+
+        self.__speed *= 0.75
+        if distance > 25:
+            self.__speed += wishdir.normalize() * 3
         else:
             self.__speed *= 0.50
+
+        # Aplicar el movimiento
         self.__pos += self.__speed
-        if abs(dest_pos.x - self.__pos.x) < 0.5:
-            self.__pos.x = dest_pos.x
-        if abs(dest_pos.y - self.__pos.y) < 0.5:
-            self.__pos.y = dest_pos.y

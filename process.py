@@ -43,6 +43,18 @@ class Process:
         """
         return self.__turn
 
+    @property
+    def total_moves(self) -> int:
+        """
+        Get the total number of moves calculated for the drones.
+
+        return:
+            int: The total number of moves.
+        """
+        if not self.__all_moves or len(self.__all_moves) == 0:
+            return int('inf')
+        return len(self.__all_moves)
+
     def search_dron(self, id: str) -> Drone | None:
         drone_find: Drone | None = None
         for dron in self.__drones:
