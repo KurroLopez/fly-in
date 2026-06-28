@@ -157,16 +157,18 @@ class Drone:
         return self.__pos
 
     @property
-    def position(self) -> Vector2:
+    def calculate_position(self) -> Vector2:
         """
-        Get the current position of the drone.
+        Calculate the position according to the current and next hub,
+        and whether the drone is in transit.
 
         Returns:
-            Vector2: The current position of the drone.
+            Vector2: The calculate position of the drone.
         """
         current_position: Vector2 = Vector2(0, 0)
         chub: Hub | None = self.__current_hub
         nhub: Hub | None = self.__next_hub
+
         if chub is not None and nhub is not None:
             pos_origin = chub.position
             pos_destination = nhub.position
@@ -180,21 +182,24 @@ class Drone:
                     current_position = self.__pos.lerp(
                         transit_position, 0.5)
                 else:
-                    current_position = pos_origin
+                    current_position = direction
             else:
-                current_position = chub.position
+                current_position = pos_destination
         return current_position
 
     def update(self) -> None:
         "Update this object's visual information."
+        if self.__pos == self.calculate_position:
+            return
         self.__speed *= 0.75
-        if self.__next_hub is not None:
-            dest_pos = self.__next_hub.position
-        else:
-            dest_pos = self.position
+        dest_pos = self.calculate_position
         wishdir = dest_pos - self.__pos
         if wishdir.length() > 32:
             self.__speed += (dest_pos - self.__pos).normalize() * 3
         else:
-            self.__speed *= 0.5
+            self.__speed *= 0.50
         self.__pos += self.__speed
+        if abs(dest_pos.x - self.__pos.x) < 0.5:
+            self.__pos.x = dest_pos.x
+        if abs(dest_pos.y - self.__pos.y) < 0.5:
+            self.__pos.y = dest_pos.y

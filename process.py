@@ -285,7 +285,7 @@ class Process:
                     else:
                         """ Its a connection, so the drone is in transit """
                         orig_dest: List[str] = loc.split('-')
-                        destination = self.__map.search_hub(loc)
+                        destination = self.__map.search_hub(orig_dest[1])
                         self.__all_moves[turn].append((drone.id, origin,
                                                        destination, True))
                 if origin is not None:
