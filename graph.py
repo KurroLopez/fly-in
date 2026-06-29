@@ -30,6 +30,8 @@ class Graph:
     __process: Process | None = None
     __auto: bool = False
     __has_finised: bool = False
+    __bg_cached: Surface | None = None
+    __bg_cached_size: tuple[int, int] = (0, 0)
 
     def __init__(self, title: str = "Fly-in",
                  width: int = INITIAL_WIDTH,
@@ -76,10 +78,11 @@ class Graph:
             return
 
         size = surface.get_size()
-        bg_scaled: Surface = pygame.transform.smoothscale(self.__bg, size)
-        surface.blit(bg_scaled, (0, 0))
-        # pygame.display.flip()
-        # pygame.display.update()
+        if self.__bg_cached is None or size != self.__bg_cached_size:
+            self.__bg_cached = pygame.transform.smoothscale(self.__bg, size)
+            self.__bg_cached_size = size
+
+        surface.blit(self.__bg_cached, (0, 0))
 
     def __init_background(self) -> None:
         """
@@ -478,7 +481,8 @@ class Graph:
                         height = self.MIN_HEIGHT
                         pygame.display.set_mode((width, height),
                                                 pygame.RESIZABLE)
-                        self.__display_map()
+                    self.__bg_cached = None 
+                    self.__display_map()
 
             if not self.__has_finised:
                 if self.__auto and self.__process is not None:
