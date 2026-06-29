@@ -254,18 +254,30 @@ class Process:
 
             for drone_id, dest, is_transit, conn_name in moves:
                 drone = self.search_dron(drone_id)
-                if drone is not None:
-                    drone.current_hub = dest
+                if drone is None:
+                    continue
 
-                    if is_transit and conn_name:
-                        drone.add_final_path(turn, conn_name)
-                    elif dest:
-                        drone.add_final_path(turn, dest.name)
-                        if not dest.is_end:
-                            if not self.is_valid_path(dest):
-                                raise ValueError("Invalid path")
-                        else:
-                            drone.finished(True)
+                origin_hub = drone.current_hub
+                drone.current_hub = dest
+
+                if is_transit and conn_name:
+                    drone.add_final_path(turn, conn_name)
+                    con = conn_name.split("-")
+                    o = self.__map.search_hub(con[0])
+                    d = self.__map.search_hub(con[1])
+                    if o is not None and d is not None:
+                        self.__all_moves[turn].append((drone_id, o, d, True))
+
+                elif dest is not None:
+                    drone.add_final_path(turn, dest.name)
+                    if dest.is_end:
+                        drone.finished(True)
+                    else:
+                        if not self.is_valid_path(dest):
+                            raise ValueError("Invalid path")
+                    if origin_hub is not None and origin_hub != dest:
+                        self.__all_moves[turn].append((drone_id, origin_hub,
+                                                       dest, False))
 
         """ Save the all moves of all drones by turn """
         origin: Hub | None = None
