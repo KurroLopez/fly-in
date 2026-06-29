@@ -48,6 +48,8 @@ class Drone:
         Set the current hub for the drone.
         """
         self.__current_hub = hub
+        if hub.is_start:
+            self.__pos = hub.position
 
     @property
     def next_hub(self) -> Hub | None:
@@ -148,13 +150,6 @@ class Drone:
             surface.blit(self.img, self.__rect.move(self.__pos))
 
     @property
-    def old_position(self) -> Vector2:
-        """
-        Get the previous position of the drone.
-        """
-        return self.__pos
-
-    @property
     def calculate_position(self) -> Vector2:
         """
         Calculate the position according to the current and next hub,
@@ -176,9 +171,9 @@ class Drone:
                 if distance > 0:
                     direction.normalize_ip()
                     transit_position = pos_origin + direction * \
-                        (distance * 0.5)
+                        (distance * 0.7)
                     current_position = self.__pos.lerp(
-                        transit_position, 0.5)
+                        transit_position, 0.7)
                 else:
                     current_position = direction
             else:
@@ -187,22 +182,6 @@ class Drone:
 
     def update(self) -> None:
         "Update this object's visual information."
-        # dest_pos = self.calculate_position
-        # const_velocity = 10.0
-        # if self.__pos == dest_pos:
-        #     self.__speed = Vector2(0, 0)
-        #     return
-
-        # wishdir = dest_pos - self.__pos
-        # distance = wishdir.length()
-
-        # if distance <= const_velocity or distance < 1.0:
-        #     self.__pos = dest_pos
-        #     self.__speed = Vector2(0, 0)
-        # else:
-        #     self.__speed = wishdir.normalize() * const_velocity
-        #     self.__pos += self.__speed
-
         dest_pos = self.calculate_position
         if self.__pos == dest_pos:
             return

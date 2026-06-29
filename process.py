@@ -13,6 +13,7 @@ class Process:
     __drones: list[Drone]
     __shortest_paths: Dict[str, float]
     __all_moves: Dict[int, List[InfoMove]]
+    __drones_index: Dict[str, Drone]
 
     def __init__(self, map: Map) -> None:
         """
@@ -22,6 +23,7 @@ class Process:
         self.__turn = 0
         self.__drones = []
         self.__all_moves = defaultdict(list)
+        self.__drones_index = {}
 
         for id in range(self.__map.nb_drones):
             drone = Drone(id)
@@ -31,6 +33,7 @@ class Process:
             if self.__map.start_hub is not None:
                 self.__map.start_hub.enter_drone()
             self.__drones.append(drone)
+            self.__drones_index[drone.id] = drone
         self.__shortest_paths = self.__calculate_costs()
 
     @property
@@ -56,20 +59,18 @@ class Process:
         return len(self.__all_moves)
 
     def search_dron(self, id: str) -> Drone | None:
-        drone_find: Drone | None = None
-        for dron in self.__drones:
-            if dron.id == id:
-                drone_find = dron
-                break
-        return drone_find
+        return self.__drones_index.get(id)
 
     def generator_next(self) -> Generator[List[InfoMove],
                                           None, None]:
         """
         Return the next movement of the drones in this turn
         """
-        for turn in self.__all_moves.keys():
+        for turn in range(1, len(self.__all_moves) + 1):
             info_turn: List[InfoMove] = self.__all_moves[turn]
+            org_name: str = ""
+            des_name: str = ""
+            previous: str = ""
             """ Update dron position """
             for item in info_turn:
                 dronid: str = item[0]
@@ -79,10 +80,21 @@ class Process:
                 dest: Hub = item[2]
                 if dron is not None:
                     if not in_transit:
-                        org_name: str = dron.final_path[turn - 1][1]
-                        des_name: str = dron.final_path[turn][1]
+                        org_name = dron.final_path[turn - 1][1]
+                        des_name = dron.final_path[turn][1]
                         origin = self.__map.search_hub(org_name)
                         dest = self.__map.search_hub(des_name)
+                    else:
+                        """
+                        Check if previous movement is the same area
+                        so, move to the final position
+                        """
+                        previous = dron.final_path[turn - 1][1]
+                        if '-' in previous:
+                            """ Has finished the transit movement """
+                            org_name = previous.split('-')[0]
+                            origin = self.__map.search_hub(org_name)
+                            in_transit = False
                     dron.current_hub = origin
                     dron.next_hub = dest
                     dron.in_transit = in_transit
