@@ -32,6 +32,8 @@ class Graph:
     __has_finised: bool = False
     __bg_cached: Surface | None = None
     __bg_cached_size: tuple[int, int] = (0, 0)
+    __map_surface: Surface | None = None
+    __map_surface_dirty: bool = True
 
     def __init__(self, title: str = "Fly-in",
                  width: int = INITIAL_WIDTH,
@@ -65,6 +67,7 @@ class Graph:
         if icon is not None:
             pygame.display.set_icon(icon)
         self.__init_background()
+        self.__map_surface_dirty = True
 
     def __draw_background(self) -> None:
         """
@@ -215,8 +218,15 @@ class Graph:
         """
         if self.__map is None:
             return
+        screen = pygame.display.get_surface()
+        if screen is None:
+            return
 
-        self.__draw_background()
+        if self.__map_surface_dirty or self.__map_surface is None:
+            self.__render_map_surface()
+        if self.__map_surface is not None:
+            screen.blit(self.__map_surface, (0, 0))
+
         self.__display_menu()
         start_hub: Hub | None = None
         end_hub: Hub | None = None
@@ -241,6 +251,32 @@ class Graph:
                 continue
             self.__display_connection(start_hub, end_hub,
                                       connection.properties.max_link_capacity)
+
+    def __render_map_surface(self) -> None:
+        """
+        Pre-render the static map (background, hubs, connections)
+        into an offscreen Surface. Only called when the map changes.
+        """
+        screen = pygame.display.get_surface()
+        if screen is None:
+            return
+
+        self.__map_surface = Surface(screen.get_size(), pygame.SRCALPHA)
+        target = self.__map_surface
+
+        if self.__bg_cached is not None:
+            target.blit(self.__bg_cached, (0, 0))
+        elif self.__bg is not None:
+            size = screen.get_size()
+            self.__bg_cached = pygame.transform.smoothscale(self.__bg, size)
+            self.__bg_cached_size = size
+            target.blit(self.__bg_cached, (0, 0))
+
+        if self.__map is None:
+            return
+
+        # self.__render_hubs_and_connections(target)
+        self.__map_surface_dirty = False
 
     def __display_menu(self) -> None:
         """
@@ -350,10 +386,6 @@ class Graph:
 
         width: int = screen.get_width()
         mid_x: int = (width // 2) - 250
-
-        screen = pygame.display.get_surface()
-        if screen is None:
-            return
 
         font = assets.FONT
         if font is None:
@@ -482,6 +514,7 @@ class Graph:
                         pygame.display.set_mode((width, height),
                                                 pygame.RESIZABLE)
                     self.__bg_cached = None
+                    self.__map_surface_dirty = True
                     self.__display_map()
 
             if not self.__has_finised:

@@ -46,7 +46,7 @@ class Drone:
         Set the current hub for the drone.
         """
         self.__current_hub = hub
-        if hub.is_start:
+        if hub is not None and hub.is_start:
             self.__pos = hub.position
 
     @property
