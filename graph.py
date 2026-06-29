@@ -28,7 +28,6 @@ class Graph:
     __map: Map | None = None
     __bg: Surface | None = None
     __process: Process | None = None
-    __imgs: dict[str, Surface] = {}
     __auto: bool = False
     __has_finised: bool = False
 
@@ -47,7 +46,7 @@ class Graph:
         pygame.init()
         pygame.display.set_caption(title)
         pygame.display.set_mode((width, height), pygame.RESIZABLE)
-        assets.load_image(Path("assets"))
+        assets.load_image(Path("assets"))   # ← esto ya carga todo
         self.__map = map
         self.__process = Process(map) if map is not None else None
         if self.__process is not None:
@@ -60,8 +59,7 @@ class Graph:
             self.__event: Generator[List[InfoMove], None, None] = \
                 self.__process.generator_next()
 
-        self.__imgs = assets.IMG
-        icon = self.__imgs.get("icon")
+        icon = assets.get_image("icon")
         if icon is not None:
             pygame.display.set_icon(icon)
         self.__init_background()
@@ -88,7 +86,7 @@ class Graph:
         Initialize the background by loading the assets and
         setting the background image.
         """
-        bg = self.__imgs.get("background")
+        bg = assets.get_image("background")
         if bg is not None:
             self.__bg = bg
         self.__draw_background()

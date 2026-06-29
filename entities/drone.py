@@ -2,7 +2,6 @@ from typing import Tuple, List
 from pygame import Surface, Vector2, Rect
 import assets
 from .hub import Hub
-from pathlib import Path
 
 
 class Drone:
@@ -25,7 +24,6 @@ class Drone:
 
     def __init__(self, id: int):
         self.id = f"D{id}"
-        assets.load_image(Path("assets"))
         self.img = assets.get_image("drone-small")
         self.__penalty = False
         self.__finished = False

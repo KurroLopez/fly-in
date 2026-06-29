@@ -50,9 +50,9 @@ def load_image(path: Path) -> None:
     """
     Load all `.png` assets from `path`. Does not work recursively.
     """
+    if IMG:          # si ya tiene contenido, no recargar
+        return
     for f in path.iterdir():
         if f.suffix == '.png':
-            name: str = str(f).removeprefix('assets/').removesuffix('.png')
-            """ for windows path """
-            # name: str = str(f).removeprefix('assets\\').removesuffix('.png')
+            name: str = f.stem
             IMG[name] = image.load(f).convert_alpha()
