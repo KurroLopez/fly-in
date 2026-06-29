@@ -1,9 +1,9 @@
 from enum import Enum
-
 from entities import TypeHub
 from .validator import Validator
 from map import Map
 from entities import Hub, Connection
+from typing import Callable
 
 
 class Configs(str, Enum):
@@ -28,6 +28,13 @@ class Parse():
         self.__map = Map()
         self.configs_valid = [cfg.value for cfg in Configs]
         self.first_line = True
+        self.__dispatch: dict[str, Callable] = {
+                Configs.NB_DRONES:  self.__parse_nb_drones,
+                Configs.START_HUB:  self.__parse_start_hub,
+                Configs.END_HUB:    self.__parse_end_hub,
+                Configs.HUB:        self.__parse_hub,
+                Configs.CONNECTION: self.__parse_connection,
+            }
 
     @property
     def list_errors(self) -> list[str]:
@@ -97,17 +104,7 @@ class Parse():
 
             if config_name not in self.configs_valid:
                 raise ValueError(f"Config '{config_name} not valid.")
-
-            if config_name == Configs.NB_DRONES:
-                self.__parse_nb_drones(line_number, config_value)
-            if config_name == Configs.START_HUB:
-                self.__parse_start_hub(line_number, config_value)
-            if config_name == Configs.END_HUB:
-                self.__parse_end_hub(line_number, config_value)
-            if config_name == Configs.HUB:
-                self.__parse_hub(line_number, config_value)
-            if config_name == Configs.CONNECTION:
-                self.__parse_connection(line_number, config_value)
+            self.__dispatch[config_name](line_number, config_value)
             self.first_line = False
         except ValueError as e:
             self.parse_error.append(f"Error line {line_number}: {e}")
