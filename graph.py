@@ -10,7 +10,7 @@ from typing import List, Generator, Tuple
 import format
 
 # (drone, origin, destination, in_transit)
-InfoMove = Tuple[str, Hub, Hub, bool]
+InfoMove = Tuple[str, Hub | None, Hub | None, bool]
 
 
 class Graph:
@@ -460,6 +460,8 @@ class Graph:
         """
         Restart the process and reset all drones to their initial state.
         """
+        if self.__process is None:
+            return
         self.__process.restart_drones()
         self.__event = self.__process.generator_next()
         self.__has_finised = False

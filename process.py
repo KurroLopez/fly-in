@@ -5,7 +5,7 @@ from collections import defaultdict
 import heapq
 
 # (drone, origin, destination, in_transit)
-InfoMove = Tuple[str, Hub, Hub, bool]
+InfoMove = Tuple[str, Hub | None, Hub | None, bool]
 
 
 class Process:
@@ -56,7 +56,7 @@ class Process:
             int: The total number of moves.
         """
         if not self.__all_moves or len(self.__all_moves) == 0:
-            return int('inf')
+            return 0
         return len(self.__all_moves)
 
     def search_dron(self, id: str) -> Drone | None:
@@ -75,8 +75,8 @@ class Process:
                 dronid: str = item[0]
                 dron: Drone | None = self.search_dron(dronid)
                 in_transit: bool = item[3]
-                origin: Hub = item[1]
-                dest: Hub = item[2]
+                origin: Hub | None = item[1]
+                dest: Hub | None = item[2]
                 if dron is not None:
                     if in_transit:
                         """
@@ -137,19 +137,21 @@ class Process:
 
         while calc:
             dist, _, hub_name = heapq.heappop(calc)
-            hub = self.__map.search_hub(hub_name)
-            if hub.is_start:
-                break
-            for neighbor in hub.path_to_end:
-                if neighbor.properties.type == ZoneType.BLOCKED:
-                    continue
-                new_distance = dist + hub.get_cost()
-                if neighbor.properties.type == ZoneType.PRIORITY:
-                    new_distance -= 0.5
-                if new_distance < distance[neighbor.name]:
-                    distance[neighbor.name] = new_distance
-                    index += 1
-                    heapq.heappush(calc, (new_distance, index, neighbor.name))
+            hub: Hub | None = self.__map.search_hub(hub_name)
+            if hub is not None:
+                if hub.is_start:
+                    break
+                for neighbor in hub.path_to_end if hub is not None else []:
+                    if neighbor.properties.type == ZoneType.BLOCKED:
+                        continue
+                    new_distance = dist + hub.get_cost()
+                    if neighbor.properties.type == ZoneType.PRIORITY:
+                        new_distance -= 0.5
+                    if new_distance < distance[neighbor.name]:
+                        distance[neighbor.name] = new_distance
+                        index += 1
+                        heapq.heappush(calc, (new_distance, index,
+                                              neighbor.name))
         return distance
 
     def calculate_moves(self) -> None:
@@ -268,6 +270,9 @@ class Process:
         """ Save the all moves of all drones by turn """
         origin: Hub | None = None
         destination: Hub | None = None
+        orig_dest: List[str] = []
+        orig_name: str = ""
+        dest_name: str = ""
         for drone in sorted(self.__drones, key=lambda d: d.id):
             if not drone.final_path:
                 continue
@@ -281,9 +286,9 @@ class Process:
                 destination = self.__map.search_hub(loc)
                 if origin is None:
                     """ Its a connection, so the drone is in transit """
-                    orig_dest: List[str] = prev_loc.split('-')
-                    orig_name: str = orig_dest[0]
-                    dest_name: str = orig_dest[1]
+                    orig_dest = prev_loc.split('-')
+                    orig_name = orig_dest[0]
+                    dest_name = orig_dest[1]
                     conn = self.__map.search_connection(orig_name, dest_name)
                     if conn is not None:
                         origin = self.__map.search_hub(orig_name)
@@ -297,7 +302,7 @@ class Process:
                                                        destination, False))
                     else:
                         """ Its a connection, so the drone is in transit """
-                        orig_dest: List[str] = loc.split('-')
+                        orig_dest = loc.split('-')
                         destination = self.__map.search_hub(orig_dest[1])
                         self.__all_moves[turn].append((drone.id, origin,
                                                        destination, True))

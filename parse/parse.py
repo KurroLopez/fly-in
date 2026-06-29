@@ -21,20 +21,21 @@ class Parse():
     Parse the value and store the content.
     If there is any issie, it will be raised in a list of items.
     """
-    parse_error: list[str] = []
-    configs_valid: list[str] = []
+    configs_valid: list[str]
+    parse_error: list[str]
 
     def __init__(self) -> None:
         self.__map = Map()
         self.configs_valid = [cfg.value for cfg in Configs]
+        self.parse_error = []
         self.first_line = True
-        self.__dispatch: dict[str, Callable] = {
-                Configs.NB_DRONES:  self.__parse_nb_drones,
-                Configs.START_HUB:  self.__parse_start_hub,
-                Configs.END_HUB:    self.__parse_end_hub,
-                Configs.HUB:        self.__parse_hub,
-                Configs.CONNECTION: self.__parse_connection,
-            }
+        self.__dispatch: dict[str, Callable[[int, str], None]] = {
+            Configs.NB_DRONES: self.__parse_nb_drones,
+            Configs.START_HUB: self.__parse_start_hub,
+            Configs.END_HUB: self.__parse_end_hub,
+            Configs.HUB: self.__parse_hub,
+            Configs.CONNECTION: self.__parse_connection
+        }
 
     @property
     def list_errors(self) -> list[str]:
