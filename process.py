@@ -187,6 +187,8 @@ class Process:
                 zone_count[ch_name] = count + 1
 
             total_zone_count: Dict[str, int] = defaultdict(int, zone_count)
+            for drone_id, (dest_hub, remaining, _) in in_transit.items():
+                total_zone_count[dest_hub.name] += 1
             for drone in self.__drones:
                 current_hub = drone.current_hub
                 if current_hub is None:

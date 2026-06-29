@@ -481,7 +481,7 @@ class Graph:
                         height = self.MIN_HEIGHT
                         pygame.display.set_mode((width, height),
                                                 pygame.RESIZABLE)
-                    self.__bg_cached = None 
+                    self.__bg_cached = None
                     self.__display_map()
 
             if not self.__has_finised:
