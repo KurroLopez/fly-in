@@ -31,7 +31,12 @@ def main() -> None:
     else:
         print(f"{format.BOLD}No errors found in {filename}{format.CLEAR}")
         print(f"{format.BOLD}Displaying map...{format.CLEAR}")
-        graph: Graph = Graph(map=parse.map)
+        try:
+            graph: Graph = Graph(map=parse.map)
+        except ValueError as error:
+            print(f"{format.ERROR}Errors found in {filename}:{format.CLEAR}")
+            print(f"{format.TAB}{format.ERROR}** {error}{format.CLEAR}")
+            exit()
         graph.run()
         print(f"{format.BOLD}End game{format.CLEAR}")
 

@@ -68,8 +68,6 @@ class Process:
         """
         for turn in range(1, len(self.__all_moves) + 1):
             info_turn: List[InfoMove] = self.__all_moves[turn]
-            org_name: str = ""
-            des_name: str = ""
             previous: str = ""
             """ Update dron position """
             for item in info_turn:
@@ -79,12 +77,7 @@ class Process:
                 origin: Hub = item[1]
                 dest: Hub = item[2]
                 if dron is not None:
-                    if not in_transit:
-                        org_name = dron.final_path[turn - 1][1]
-                        des_name = dron.final_path[turn][1]
-                        origin = self.__map.search_hub(org_name)
-                        dest = self.__map.search_hub(des_name)
-                    else:
+                    if in_transit:
                         """
                         Check if previous movement is the same area
                         so, move to the final position

@@ -51,7 +51,11 @@ class Graph:
         self.__map = map
         self.__process = Process(map) if map is not None else None
         if self.__process is not None:
-            self.__process.calculate_moves()
+            try:
+                self.__process.calculate_moves()
+            except ValueError:
+                pygame.quit()
+                raise ValueError("No valid path from start to end hub.")
             self.__process.restart_drones()
             self.__event: Generator[List[InfoMove], None, None] = \
                 self.__process.generator_next()
