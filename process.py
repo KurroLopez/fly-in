@@ -2,6 +2,7 @@ from map import Map
 from entities import Drone, Hub, ZoneType, Connection
 from typing import Dict, List, Tuple, Generator
 from collections import defaultdict
+import heapq
 
 # (drone, origin, destination, in_transit)
 InfoMove = Tuple[str, Hub, Hub, bool]
@@ -127,16 +128,16 @@ class Process:
         index: int = 0
         distance: Dict[str, float] = {h.name: float('inf')
                                       for h in self.__map.hubs.values()}
-        calc: List[Tuple[float, int, Hub]] = []
+        calc: List[Tuple[float, int, str]] = []
         if self.__map.start_hub is not None:
             distance[self.__map.start_hub.name] = float('inf')
         if self.__map.end_hub is not None:
             distance[self.__map.end_hub.name] = 0.0
-            calc.append((0, index, self.__map.end_hub))
+            heapq.heappush(calc, (0.0, index, self.__map.end_hub.name))
 
         while calc:
-            item = self.pop_min(calc)
-            dist, _, hub = item
+            dist, _, hub_name = heapq.heappop(calc)
+            hub = self.__map.search_hub(hub_name)
             if hub.is_start:
                 break
             for neighbor in hub.path_to_end:
@@ -148,15 +149,8 @@ class Process:
                 if new_distance < distance[neighbor.name]:
                     distance[neighbor.name] = new_distance
                     index += 1
-                    calc.append((new_distance, index, neighbor))
+                    heapq.heappush(calc, (new_distance, index, neighbor.name))
         return distance
-
-    def pop_min(self, list: List[Tuple[float,
-                                       int,
-                                       Hub]]) -> Tuple[float, int, Hub]:
-        item = min(list)
-        list.remove(item)
-        return item
 
     def calculate_moves(self) -> None:
         """
