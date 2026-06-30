@@ -103,6 +103,8 @@ class Process:
             drone.current_hub = self.__map.start_hub
             drone.next_hub = self.__map.start_hub
             drone.in_transit = False
+            if drone.current_hub is not None:
+                drone.pos = drone.current_hub.position
             drone.finished(False)
         self.__turn = 0
 
@@ -275,7 +277,13 @@ class Process:
                     else:
                         if not self.is_valid_path(dest):
                             raise ValueError("Invalid path")
-                    if origin_hub is not None and origin_hub != dest:
+                    if conn_name:
+                        con = conn_name.split("-")
+                        real_origin = self.__map.search_hub(con[0])
+                        if real_origin is not None:
+                            self.__all_moves[turn].append(
+                                (drone_id, real_origin, dest, True))
+                    elif origin_hub is not None and origin_hub != dest:
                         self.__all_moves[turn].append((drone_id, origin_hub,
                                                        dest, False))
 

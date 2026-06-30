@@ -50,7 +50,7 @@ class Graph:
         pygame.init()
         pygame.display.set_caption(title)
         pygame.display.set_mode((width, height), pygame.RESIZABLE)
-        assets.load_image(Path("assets"))   # ← esto ya carga todo
+        assets.load_image(Path("assets"))
         self.__map = map
         self.__process = Process(map) if map is not None else None
         if self.__process is not None:
@@ -468,7 +468,7 @@ class Graph:
         self.__auto = False
         self.__display_map()
         for drone in self.__process.drones:
-            drone.update(0)
+            drone.update(100)
             drone.draw(pygame.display.get_surface())
         self.__update_display_turn()
         self.__display_menu()

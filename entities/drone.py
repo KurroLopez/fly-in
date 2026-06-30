@@ -50,8 +50,6 @@ class Drone:
         Set the current hub for the drone.
         """
         self.__current_hub = hub
-        if hub is not None and hub.is_start:
-            self.__pos = hub.position
 
     @property
     def next_hub(self) -> Hub | None:
@@ -66,8 +64,6 @@ class Drone:
         Set the next hub for the drone.
         """
         self.__next_hub = hub
-        if hub is not None and hub.is_start:
-            self.__pos = hub.position
 
     @property
     def is_finished(self) -> bool:
@@ -81,6 +77,14 @@ class Drone:
         Mark the drone as finished or not finished.
         """
         self.__finished = status
+
+    @property
+    def pos(self) -> Vector2:
+        return self.__pos
+
+    @pos.setter
+    def pos(self, pos: Vector2) -> None:
+        self.__pos = pos
 
     def move_to_next_hub(self) -> None:
         """
@@ -153,8 +157,7 @@ class Drone:
         if self.img is not None:
             surface.blit(self.img, self.__rect.move(self.__pos))
 
-    @property
-    def calculate_position(self) -> Vector2:
+    def __calculate_position(self) -> Vector2:
         """
         Calculate the position according to the current and next hub,
         and whether the drone is in transit.
@@ -174,41 +177,23 @@ class Drone:
                 distance = direction.length()
                 if distance > 0:
                     direction.normalize_ip()
-                    transit_position = pos_origin + direction * \
-                        (distance * 0.7)
-                    current_position = self.__pos.lerp(
-                        transit_position, 0.7)
+                    current_position = pos_origin + direction * \
+                        (distance * 0.5)
                 else:
-                    current_position = direction
+                    current_position = pos_destination
             else:
                 current_position = pos_destination
         return current_position
 
     def update(self, dt: float) -> None:
         "Update this object's visual information."
-        next_position: Vector2 = self.calculate_position
-        to_target = next_position - self.__pos
-        distance = to_target.length()
-
-        if distance < 1:
-            self.__pos = next_position.copy()
-            self.__speed = Vector2(0, 0)
+        next_position: Vector2 = self.__calculate_position().copy()
+        if next_position == self.__pos:
             return
 
-        direction = to_target.normalize()
+        to_target = next_position - self.__pos
 
-        speed = self.__speed.length()
-        braking_distance = (speed ** 2) / (2 * ACCELERATION)
-
-        if distance <= braking_distance:
-            self.__speed -= self.__speed.normalize() * ACCELERATION * dt
+        if to_target.length() > 10:
+            self.__pos += to_target.normalize() * MAX_SPEED * dt
         else:
-            self.__speed += direction * ACCELERATION * dt
-            if self.__speed.length() > MAX_SPEED:
-                self.__speed.scale_to_length(MAX_SPEED)
-        move = self.__speed * dt
-        if move.length() >= distance:
-            self.__pos = next_position.copy()
-            self.__speed = Vector2(0, 0)
-        else:
-            self.__pos += move
+            self.__pos = next_position
