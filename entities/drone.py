@@ -4,6 +4,10 @@ import assets
 from .hub import Hub
 
 
+MAX_SPEED = 600
+ACCELERATION = 1500
+
+
 class Drone:
     """
     Represents a drone in the simulation.
@@ -62,6 +66,8 @@ class Drone:
         Set the next hub for the drone.
         """
         self.__next_hub = hub
+        if hub is not None and hub.is_start:
+            self.__pos = hub.position
 
     @property
     def is_finished(self) -> bool:
@@ -178,24 +184,31 @@ class Drone:
                 current_position = pos_destination
         return current_position
 
-    def update(self) -> None:
+    def update(self, dt: float) -> None:
         "Update this object's visual information."
-        dest_pos = self.calculate_position
-        if self.__pos == dest_pos:
-            return
-        wishdir = dest_pos - self.__pos
-        distance = wishdir.length()
+        next_position: Vector2 = self.calculate_position
+        to_target = next_position - self.__pos
+        distance = to_target.length()
 
-        if distance < 1.0:
-            self.__pos = dest_pos
+        if distance < 1:
+            self.__pos = next_position.copy()
             self.__speed = Vector2(0, 0)
             return
 
-        self.__speed *= 0.75
-        if distance > 25:
-            self.__speed += wishdir.normalize() * 3
-        else:
-            self.__speed *= 0.50
+        direction = to_target.normalize()
 
-        # Aplicar el movimiento
-        self.__pos += self.__speed
+        speed = self.__speed.length()
+        braking_distance = (speed ** 2) / (2 * ACCELERATION)
+
+        if distance <= braking_distance:
+            self.__speed -= self.__speed.normalize() * ACCELERATION * dt
+        else:
+            self.__speed += direction * ACCELERATION * dt
+            if self.__speed.length() > MAX_SPEED:
+                self.__speed.scale_to_length(MAX_SPEED)
+        move = self.__speed * dt
+        if move.length() >= distance:
+            self.__pos = next_position.copy()
+            self.__speed = Vector2(0, 0)
+        else:
+            self.__pos += move

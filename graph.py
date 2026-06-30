@@ -468,7 +468,7 @@ class Graph:
         self.__auto = False
         self.__display_map()
         for drone in self.__process.drones:
-            drone.update()
+            drone.update(0)
             drone.draw(pygame.display.get_surface())
         self.__update_display_turn()
         self.__display_menu()
@@ -525,11 +525,11 @@ class Graph:
                     if auto_play <= 0:
                         self.__next()
                         auto_play = 1000
-
+            dt: float = clock.tick(60) / 1000
             self.__display_map()
             if self.__process is not None:
                 for drone in self.__process.drones:
-                    drone.update()
+                    drone.update(dt)
                     drone.draw(pygame.display.get_surface())
 
             pygame.display.flip()

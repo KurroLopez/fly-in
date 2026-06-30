@@ -69,7 +69,7 @@ class Process:
         """
         for turn in range(1, len(self.__all_moves) + 1):
             info_turn: List[InfoMove] = self.__all_moves[turn]
-            previous: str = ""
+            next_hub: str = ""
             """ Update dron position """
             for item in info_turn:
                 dronid: str = item[0]
@@ -83,10 +83,10 @@ class Process:
                         Check if previous movement is the same area
                         so, move to the final position
                         """
-                        previous = dron.final_path[turn - 1][1]
-                        if '-' in previous:
+                        next_hub = dron.final_path[turn][1]
+                        if '-' in next_hub:
                             """ Has finished the transit movement """
-                            org_name = previous.split('-')[0]
+                            org_name = next_hub.split('-')[0]
                             origin = self.__map.search_hub(org_name)
                             in_transit = False
                     dron.current_hub = origin
