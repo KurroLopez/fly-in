@@ -80,14 +80,17 @@ class Process:
                 if dron is not None:
                     if in_transit:
                         """
-                        Check if previous movement is the same area
-                        so, move to the final position
+                        final_path[turn] indicates if the movement
+                        is in transit or it get the destination
                         """
                         next_hub = dron.final_path[turn][1]
                         if '-' in next_hub:
-                            """ Has finished the transit movement """
+                            """ this is a transit movement """
                             org_name = next_hub.split('-')[0]
                             origin = self.__map.search_hub(org_name)
+                            in_transit = True
+                        else:
+                            """ Drone gets the destination """
                             in_transit = False
                     dron.current_hub = origin
                     dron.next_hub = dest
