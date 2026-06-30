@@ -279,49 +279,6 @@ class Process:
                         self.__all_moves[turn].append((drone_id, origin_hub,
                                                        dest, False))
 
-        """ Save the all moves of all drones by turn """
-        origin: Hub | None = None
-        destination: Hub | None = None
-        orig_dest: List[str] = []
-        orig_name: str = ""
-        dest_name: str = ""
-        for drone in sorted(self.__drones, key=lambda d: d.id):
-            if not drone.final_path:
-                continue
-            for i in range(1, len(drone.final_path)):
-                turn, loc = drone.final_path[i]
-                _, prev_loc = drone.final_path[i - 1]
-                if loc == prev_loc:
-                    continue
-                """ Search the loc hub """
-                origin = self.__map.search_hub(prev_loc)
-                destination = self.__map.search_hub(loc)
-                if origin is None:
-                    """ Its a connection, so the drone is in transit """
-                    orig_dest = prev_loc.split('-')
-                    orig_name = orig_dest[0]
-                    dest_name = orig_dest[1]
-                    conn = self.__map.search_connection(orig_name, dest_name)
-                    if conn is not None:
-                        origin = self.__map.search_hub(orig_name)
-                        destination = self.__map.search_hub(dest_name)
-                        if origin is not None and destination is not None:
-                            self.__all_moves[turn].append((drone.id, origin,
-                                                           destination, True))
-                else:
-                    if destination is not None:
-                        self.__all_moves[turn].append((drone.id, origin,
-                                                       destination, False))
-                    else:
-                        """ Its a connection, so the drone is in transit """
-                        orig_dest = loc.split('-')
-                        destination = self.__map.search_hub(orig_dest[1])
-                        self.__all_moves[turn].append((drone.id, origin,
-                                                       destination, True))
-                if origin is not None:
-                    if origin.is_end:
-                        break
-
     def is_valid_path(self, hub: Hub) -> bool:
         """Check if there the valid path or not from start to end
 
