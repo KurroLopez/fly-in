@@ -103,7 +103,7 @@ class Process:
         Restart all drones to their initial state.
         """
         for drone in self.__drones:
-            drone.current_hub = self.__map.start_hub
+            # drone.current_hub = self.__map.start_hub
             drone.next_hub = self.__map.start_hub
             drone.in_transit = False
             if drone.current_hub is not None:

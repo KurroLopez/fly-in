@@ -1,4 +1,5 @@
 import pygame
+from pygame.mixer import Sound
 from pygame.surface import Surface
 from map import Map
 from entities import Hub, ZoneType
@@ -25,6 +26,8 @@ class Graph:
     CONNECTION_WIDTH = 6
     GRID_SIZE = 150
 
+    VOLUMEN: float = 0.25
+
     __map: Map | None = None
     __bg: Surface | None = None
     __process: Process | None = None
@@ -34,6 +37,9 @@ class Graph:
     __bg_cached_size: tuple[int, int] = (0, 0)
     __map_surface: Surface | None = None
     __map_surface_dirty: bool = True
+    __s_start: Sound | None = None
+    __s_end: Sound | None = None
+    __s_drone: Sound | None = None
 
     def __init__(self, title: str = "Fly-in",
                  width: int = INITIAL_WIDTH,
@@ -48,9 +54,12 @@ class Graph:
         :param map: The map to be displayed.
         """
         pygame.init()
+        pygame.mixer.init()
+        pygame.mixer.music.set_volume(self.VOLUMEN)
         pygame.display.set_caption(title)
         pygame.display.set_mode((width, height), pygame.RESIZABLE)
         assets.load_image(Path("assets"))
+        assets.load_sound(Path("assets"))
         self.__map = map
         self.__process = Process(map) if map is not None else None
         if self.__process is not None:
@@ -68,6 +77,10 @@ class Graph:
             pygame.display.set_icon(icon)
         self.__init_background()
         self.__map_surface_dirty = True
+
+        self.__s_start = assets.get_sound("start")
+        self.__s_end = assets.get_sound("end")
+        self.__s_drone = assets.get_sound("drone")
 
     def __draw_background(self) -> None:
         """
@@ -443,16 +456,19 @@ class Graph:
                 if drone:
                     drone.print()
             print()
+            # self.__s_drone.play()
             self.__update_display_turn()
             if self.__process.turn == self.__process.total_moves:
                 self.__has_finised = True
                 self.__disable_turn()
+                self.__s_end.play()
                 print(f"\n{format.BOLD}Total moves: {self.__process.turn}"
                       f"{format.CLEAR}")
         except StopIteration:
             self.__auto = False
             self.__has_finised = True
             self.__disable_turn()
+            self.__s_end.play()
             print(f"\n{format.BOLD}Total moves: {self.__process.turn}"
                   f"{format.CLEAR}")
 
@@ -473,6 +489,7 @@ class Graph:
         self.__update_display_turn()
         self.__display_menu()
         self.__display_drones()
+        self.__s_start.play()
         print(f"\n{format.BOLD}{format.WARNING}Process restarted."
               f"{format.CLEAR}")
 
@@ -485,6 +502,7 @@ class Graph:
         self.__display_map()
         auto_play: int = 0
         self.__display_drones()
+        self.__s_start.play()
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -499,6 +517,12 @@ class Graph:
                     if event.key == pygame.K_r:
                         if self.__has_finised:
                             self.__restart_all()
+                    # if event.key == pygame.K_m:
+                    #     current_volume = pygame.mixer.music.get_volume()
+                    #     if current_volume > 0:
+                    #         pygame.mixer.music.set_volume(0.0)
+                    #     else:
+                    #         pygame.mixer.music.set_volume(self.VOLUMEN)
                     if event.key == pygame.K_a:
                         if not self.__has_finised:
                             self.__auto = not self.__auto

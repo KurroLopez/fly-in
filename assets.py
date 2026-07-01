@@ -2,11 +2,12 @@ from pathlib import Path
 from pygame import image, font
 import pygame
 from pygame.surface import Surface
-
+from pygame.mixer import Sound
 
 pygame.font.init()
 
 IMG: dict[str, Surface] = {}
+SOUND: dict[str, Sound] = {}
 FONT = font.Font('font/HomeVideo-BLG6G.ttf', 24)
 FONT_BIG = font.Font('font/HomeVideo-BLG6G.ttf', 48)
 
@@ -56,3 +57,28 @@ def load_image(path: Path) -> None:
         if f.suffix == '.png':
             name: str = f.stem
             IMG[name] = image.load(f).convert_alpha()
+
+
+def load_sound(path: Path) -> None:
+    """
+    Load all `.mp3` assets from `path`
+    """
+    if SOUND:
+        return
+    for f in path.iterdir():
+        if f.suffix == '.mp3':
+            name: str = f.stem
+            SOUND[name] = Sound(f)
+
+
+def get_sound(name: str) -> Sound:
+    """
+    Get a sound from the loaded assets
+
+    args:
+        name: Name of the sound to retrieve
+    """
+    if name in SOUND:
+        return SOUND[name]
+    else:
+        raise ValueError(f"Sound '{name}' not found in assets.")

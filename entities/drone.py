@@ -21,7 +21,6 @@ class Drone:
     __final_path: List[Tuple[int, str]]
     __in_transit: bool
     __pos: Vector2
-    __speed: Vector2
     __rect: Rect
 
     id: str = ""
@@ -34,7 +33,6 @@ class Drone:
         self.__final_path = []
         self.__in_transit = False
         self.__pos = Vector2(0, 0)
-        self.__speed = Vector2(0, 0)
         self.__rect = self.img.get_rect(center=self.__pos)
 
     @property
@@ -157,7 +155,7 @@ class Drone:
         if self.img is not None:
             surface.blit(self.img, self.__rect.move(self.__pos))
 
-    def __calculate_position(self) -> Vector2:
+    def calculate_position(self) -> Vector2:
         """
         Calculate the position according to the current and next hub,
         and whether the drone is in transit.
@@ -187,7 +185,7 @@ class Drone:
 
     def update(self, dt: float) -> None:
         "Update this object's visual information."
-        next_position: Vector2 = self.__calculate_position().copy()
+        next_position: Vector2 = self.calculate_position().copy()
         if next_position == self.__pos:
             return
 
