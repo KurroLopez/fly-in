@@ -5,11 +5,12 @@ start_hub: start 0 0 [color=green]
 hub: waypoint1 1 0 [color=blue]
 hub: waypoint2 2 0 [color=blue]
 hub: blocked1 1 -1 [color=white zone=blocked]
-hub: blocked2 2 1 [color=white zone=blocked]
+hub: blocked,2 2 1 [color=white zone=blocked]
 end_hub: goal 3 0 [color=red]
 
 connection: start-waypoint1
 connection: waypoint1-waypoint2
+connection: waypoint2-waypoint1
 connection: waypoint1-blocked1
-connection: waypoint2-blocked2
+connection: waypoint2-blocked,2
 connection: waypoint2-goal

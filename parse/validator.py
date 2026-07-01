@@ -2,6 +2,7 @@ from typing import Any
 from entities import Hub, Connection
 from entities import HubProperties, ConnectionProperties, ZoneType
 from matplotlib import colors
+import re
 
 
 class Validator():
@@ -69,6 +70,12 @@ class Validator():
 
     @staticmethod
     def val_hub(raw: str) -> Hub:
+        """
+        Validate if the hub configuration is valid
+
+        Args:
+            raw: Raw content of the hub configuration
+        """
         zone_types = [type.value for type in ZoneType]
         raw = raw.strip()
         if raw == "":
@@ -82,6 +89,8 @@ class Validator():
             raise ValueError(f"Invalid hub definition: '{raw.strip()}'")
 
         name: str = parts[0]
+        if not Validator.__valid_name(name):
+            raise ValueError(f"Invalid hub name: '{name}'")
         try:
             pos_x: int = int(parts[1])
             pos_y: int = int(parts[2])
@@ -127,6 +136,15 @@ class Validator():
 
     @staticmethod
     def val_connection(raw: str) -> Connection:
+        """
+        Validate if the connection configuration is valid
+
+        Args:
+            raw: Raw content of the connection configuration
+
+        Returns:
+            Connection: Validated connection object
+        """
         raw = raw.strip()
         if raw == "":
             raise ValueError("Value cannot be empty")
@@ -170,3 +188,16 @@ class Validator():
         connection: Connection = Connection(raw)
         connection.properties = ConnectionProperties(mlc)
         return connection
+
+    @staticmethod
+    def __valid_name(name: str) -> bool:
+        """
+        Validate if the name is valid
+
+        Args:
+            name: Name to validate
+        Returns:
+            bool: True if the name is valid, False otherwise
+        """
+        pattern: str = r"^[a-zA-Z0-9_]+$"
+        return bool(re.match(pattern, name))

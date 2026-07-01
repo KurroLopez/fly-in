@@ -89,6 +89,13 @@ class Parse():
         return True
 
     def __parse_line(self, line_number: int, raw: str) -> None:
+        """
+        Parse a line of the map file.
+
+        Args:
+            line_number: Number of the line in the map file
+            raw: Raw content of the line
+        """
         try:
             if raw.strip() == "" or raw.strip().startswith('#'):
                 return
@@ -111,11 +118,25 @@ class Parse():
             self.parse_error.append(f"Error line {line_number}: {e}")
 
     def __parse_nb_drones(self, line: int, raw: str) -> None:
+        """
+        Parse the number of drones configuration
+
+        Args:
+            line: Number of the line in the map file
+            raw: Raw content of the line
+        """
         if not self.first_line:
             raise ValueError("'nb_drones' parameter must be the first line")
         self.__map.nb_drones = Validator().val_nb_drones(raw)
 
     def __parse_start_hub(self, line: int, raw: str) -> None:
+        """
+        Parse the start hub configuration
+
+        Args:
+            line: Number of the line in the map file
+            raw: Raw content of the line
+        """
         if self.__map.exist_start_hub():
             raise ValueError("Start hub is defined previously")
         start_hub: Hub = Validator().val_hub(raw)
@@ -127,6 +148,13 @@ class Parse():
         self.__map.start_hub = start_hub
 
     def __parse_end_hub(self, line: int, raw: str) -> None:
+        """
+        Parse the end hub configuration
+
+        Args:
+            line: Number of the line in the map file
+            raw: Raw content of the line
+        """
         if self.__map.exist_end_hub():
             raise ValueError("End hub is defined previously")
         end_hub: Hub = Validator().val_hub(raw)
@@ -138,6 +166,13 @@ class Parse():
         self.__map.end_hub = end_hub
 
     def __parse_hub(self, line_number: int, config_value: str) -> None:
+        """
+        Parse a hub configuration
+
+        Args:
+            line_number: Number of the line in the map file
+            config_value: Raw content of the line
+        """
         hub: Hub = Validator().val_hub(config_value)
         info_hub: tuple[bool, TypeHub] = self.__map.exist_hub(hub.name)
         if info_hub[0]:
@@ -145,10 +180,25 @@ class Parse():
         self.__map.add_hub(hub)
 
     def __parse_connection(self, line_number: int, config_value: str) -> None:
+        """
+        Parse a connection configuration
+
+        Args:
+            line_number: Number of the line in the map file
+            config_value: Raw content of the line
+        """
         connection: Connection = Validator().val_connection(config_value)
         if self.__map.exist_connection(connection.name):
             raise ValueError(f"Connection '{connection.name}' "
                              f"is defined previously")
+        """ Validate if changing the origin and destination hubs
+            exist as connection """
+        org_name: str = connection.name_origin()
+        dest_name: str = connection.name_destination()
+        if self.__map.exist_connection(f"{dest_name}-{org_name}"):
+            raise ValueError(f"Connection '{dest_name}-{org_name}' "
+                             f"already exists. Cannot create "
+                             f"'{org_name}-{dest_name}'")
         """ Validate if the origin and destination hubs exist """
         info_origin: tuple[bool, TypeHub]
         info_origin = self.__map.exist_hub(connection.name_origin())
@@ -183,6 +233,7 @@ class Parse():
             destination_hub = self.__map.end_hub
         else:
             destination_hub = self.__map.hubs[connection.name_destination()]
+
         connection.origin = origin_hub
         connection.destination = destination_hub
         connection.setup_connection_path()

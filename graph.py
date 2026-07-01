@@ -461,14 +461,16 @@ class Graph:
             if self.__process.turn == self.__process.total_moves:
                 self.__has_finised = True
                 self.__disable_turn()
-                self.__s_end.play()
+                if self.__s_end is not None:
+                    self.__s_end.play()
                 print(f"\n{format.BOLD}Total moves: {self.__process.turn}"
                       f"{format.CLEAR}")
         except StopIteration:
             self.__auto = False
             self.__has_finised = True
             self.__disable_turn()
-            self.__s_end.play()
+            if self.__s_end is not None:
+                self.__s_end.play()
             print(f"\n{format.BOLD}Total moves: {self.__process.turn}"
                   f"{format.CLEAR}")
 
@@ -489,7 +491,8 @@ class Graph:
         self.__update_display_turn()
         self.__display_menu()
         self.__display_drones()
-        self.__s_start.play()
+        if self.__s_start is not None:
+            self.__s_start.play()
         print(f"\n{format.BOLD}{format.WARNING}Process restarted."
               f"{format.CLEAR}")
 
@@ -502,7 +505,8 @@ class Graph:
         self.__display_map()
         auto_play: int = 0
         self.__display_drones()
-        self.__s_start.play()
+        if self.__s_start is not None:
+            self.__s_start.play()
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
